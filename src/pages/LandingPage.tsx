@@ -1,10 +1,26 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { ExternalLink } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { supabase, Prospect } from '../lib/supabase';
 import Loader from '../components/Loader';
 import VapiCTA from '../components/VapiCTA';
 import VapiFAB from '../components/VapiFAB';
+
+// ── Reusable animation variants ──────────────────────────────────────────────
+const fadeUp = {
+  hidden: { opacity: 0, y: 32 },
+  show: (delay = 0) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.75, ease: [0.22, 1, 0.36, 1], delay },
+  }),
+};
+
+const stagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.12, delayChildren: 0.15 } },
+};
 
 export default function LandingPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -15,56 +31,57 @@ export default function LandingPage() {
   useEffect(() => {
     async function fetchProspect() {
       if (!slug) return;
-
       const { data, error } = await supabase
         .from('prospects')
         .select('*')
         .eq('slug', slug)
         .maybeSingle();
-
-      if (error) {
-        console.error('Error fetching prospect:', error);
-      }
-
+      if (error) console.error('Error fetching prospect:', error);
       setProspect(data);
       setLoading(false);
     }
-
     fetchProspect();
   }, [slug]);
 
   useEffect(() => {
     const name = prospect?.company_name || prospect?.full_name;
-    if (name) {
-      document.title = `${name} — AI-Powered Real Estate`;
-    }
+    if (name) document.title = `${name} — AI-Powered Real Estate`;
   }, [prospect]);
 
-  if (loading) {
-    return <Loader />;
-  }
+  if (loading) return <Loader />;
 
   if (!prospect) {
     return (
       <div className="min-h-screen bg-[#0B132B] flex items-center justify-center px-4">
         <div className="text-center">
           <h1 className="text-5xl font-serif text-white mb-4">Luxury Real Estate</h1>
-          <p className="text-amber-500 text-lg font-sans">Premium AI Concierge Experience</p>
+          <p className="text-amber-500 text-lg">Premium AI Concierge Experience</p>
         </div>
       </div>
     );
   }
 
-  // ── Safe Fallback Logic ──────────────────────────────────────────────────
+  // ── Safe Fallback Logic ───────────────────────────────────────────────────
   const companyName =
-    prospect.company_name && prospect.company_name.trim() !== ''
+    prospect.company_name?.trim()
       ? prospect.company_name
-      : prospect.full_name && prospect.full_name.trim() !== ''
+      : prospect.full_name?.trim()
         ? prospect.full_name
         : 'Exquisite Properties';
 
-  const profilePic = prospect.profilePicUrl || prospect.profile_pic_url || '';
+  const cleanUrl = (url: string) => url.replace(/^=+/, '').trim();
 
+  const profilePic = cleanUrl(prospect.profilePicUrl || prospect.profile_pic_url || '');
+
+  let imagesArray: string[] = [];
+  try {
+    const raw = Array.isArray(prospect.post_images)
+      ? prospect.post_images
+      : JSON.parse(prospect.post_images as unknown as string);
+    imagesArray = (raw as string[]).map(cleanUrl).filter(Boolean);
+  } catch (e) {
+    console.error('Failed to parse post_images:', e);
+  }
 
   const vapiTheme = {
     buttonBg: 'from-amber-500 to-amber-700',
@@ -75,120 +92,192 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[#0B132B] text-white font-sans selection:bg-amber-500/30 selection:text-white">
 
-      {/* ─── Navigation (Logo Only) ───────────────────────────────── */}
-      <nav className="sticky top-0 z-40 bg-[#0B132B]/95 backdrop-blur-lg border-b border-white/10">
+      {/* ─── Navigation ──────────────────────────────────────────────── */}
+      <nav className="sticky top-0 z-40 backdrop-blur-xl bg-[#0B132B]/80 border-b border-white/[0.06]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
-            <div className="text-2xl font-serif font-light tracking-[0.2em] text-white">
+            {/* Logo — glassmorphic pill */}
+            <div className="text-xl sm:text-2xl font-serif font-light tracking-[0.22em] text-white">
               {companyName.toUpperCase()}
             </div>
-            {/* AI Live Demo badge */}
-            <div className="hidden sm:flex items-center gap-2 border border-amber-500/40 bg-amber-500/10 px-4 py-1.5 rounded-full">
+            {/* AI badge */}
+            <div className="hidden sm:flex items-center gap-2.5 bg-white/5 backdrop-blur-md border border-amber-500/30 px-4 py-1.5 rounded-full">
               <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-              <span className="text-xs tracking-widest text-amber-400 uppercase font-medium">AI Live Demo</span>
+              <span className="text-[11px] tracking-[0.25em] text-amber-400 uppercase font-semibold">
+                AI Live Demo
+              </span>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* ─── Hero Section ────────────────────────────────────────── */}
+      {/* ─── Hero Section ────────────────────────────────────────────── */}
       <section id="hero" className="relative min-h-[92vh] flex items-center overflow-hidden">
-        {/* Ambient background glows */}
+        {/* Ambient glows */}
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-amber-500/8 rounded-full blur-[140px]" />
-          <div className="absolute top-1/4 -left-32 w-80 h-80 bg-amber-500/10 rounded-full blur-[120px]" />
-          <div className="absolute bottom-1/4 -right-32 w-80 h-80 bg-amber-500/10 rounded-full blur-[120px]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-amber-500/[0.07] rounded-full blur-[160px]" />
+          <div className="absolute top-1/4 -left-40 w-96 h-96 bg-amber-600/10 rounded-full blur-[130px]" />
+          <div className="absolute bottom-1/4 -right-40 w-96 h-96 bg-amber-600/10 rounded-full blur-[130px]" />
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative z-10 w-full">
-          <div className="flex flex-col items-center text-center gap-10">
+          <motion.div
+            className="flex flex-col items-center text-center gap-10"
+            variants={stagger}
+            initial="hidden"
+            animate="show"
+          >
 
-            {/* ── Profile Picture (Central Visual) ── */}
-            <div className="relative">
-              {/* Gold glow ring */}
-              <div className="absolute -inset-3 rounded-full bg-gradient-to-br from-amber-400/40 via-amber-600/20 to-transparent blur-2xl" />
-              <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-amber-500/50 to-amber-700/30 blur-md" />
+            {/* ── Profile Picture ── */}
+            <motion.div
+              className="relative"
+              variants={fadeUp}
+              custom={0}
+            >
+              {/* Slow breathing outer glow */}
+              <motion.div
+                className="absolute -inset-6 rounded-full bg-amber-500/20 blur-3xl"
+                animate={{ opacity: [0.3, 0.7, 0.3], scale: [0.95, 1.05, 0.95] }}
+                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+              />
+              {/* Hard gold ring */}
+              <div className="absolute -inset-[3px] rounded-full bg-gradient-to-br from-amber-400 via-amber-600 to-amber-900 opacity-70 blur-[2px]" />
+
               {profilePic && !imageError ? (
                 <img
                   src={profilePic}
                   alt={companyName}
-                  onError={() => setImageError(true)}
-                  className="relative w-40 h-40 sm:w-52 sm:h-52 lg:w-64 lg:h-64 object-cover rounded-full border-2 border-amber-500/60 shadow-2xl shadow-amber-500/30"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    const proxy = 'https://wsrv.nl/?url=' + encodeURIComponent(profilePic);
+                    if (e.currentTarget.src !== proxy) {
+                      e.currentTarget.src = proxy;
+                    } else {
+                      setImageError(true);
+                    }
+                  }}
+                  className="relative w-40 h-40 sm:w-56 sm:h-56 lg:w-72 lg:h-72 object-cover rounded-full border border-amber-500/40 shadow-2xl shadow-amber-500/20"
                 />
               ) : (
-                <div className="relative w-40 h-40 sm:w-52 sm:h-52 lg:w-64 lg:h-64 rounded-full border-2 border-amber-500/60 bg-[#0F1E3A] flex items-center justify-center shadow-2xl shadow-amber-500/30">
-                  <span className="text-5xl font-serif text-amber-500">
+                <div className="relative w-40 h-40 sm:w-56 sm:h-56 lg:w-72 lg:h-72 rounded-full border border-amber-500/40 bg-[#0F1E3A] flex items-center justify-center shadow-2xl shadow-amber-500/20">
+                  <span className="text-6xl font-serif text-amber-500">
                     {companyName.charAt(0).toUpperCase()}
                   </span>
                 </div>
               )}
-            </div>
+            </motion.div>
 
-            {/* ── Intro Text ── */}
-            <div className="space-y-5 max-w-3xl">
-              <p className="text-amber-400 text-sm tracking-[0.3em] uppercase font-medium">
-                Private AI Demo — For {companyName}
-              </p>
+            {/* ── Eyebrow label ── */}
+            <motion.p
+              className="text-amber-400/80 text-[11px] tracking-[0.4em] uppercase font-semibold"
+              variants={fadeUp}
+              custom={0.1}
+            >
+              Private AI Demo — For {companyName}
+            </motion.p>
 
-              <h1 className="text-3xl sm:text-4xl lg:text-6xl font-serif font-light leading-tight text-white">
-                Hey{' '}
-                <span className="text-amber-400">{companyName}</span>
-                , I've built a custom{' '}
-                <span className="text-amber-500">AI Receptionist</span>{' '}
-                that answers your client calls{' '}
-                <span className="italic">24/7.</span>
-              </h1>
+            {/* ── Headline ── */}
+            <motion.h1
+              className="text-3xl sm:text-5xl lg:text-6xl font-serif font-light leading-[1.15] text-white max-w-4xl"
+              variants={fadeUp}
+              custom={0.2}
+            >
+              Hey{' '}
+              <span className="text-amber-400 italic">{companyName}</span>
+              , I've built a custom{' '}
+              <span className="text-amber-500">AI Receptionist</span>{' '}
+              that answers your client calls{' '}
+              <span className="italic">24/7.</span>
+            </motion.h1>
 
-              <p className="text-slate-400 text-lg font-sans max-w-xl mx-auto leading-relaxed">
-                No hold music. No missed leads. Your AI concierge is live right now — test it below.
-              </p>
-            </div>
+            {/* ── Subheadline ── */}
+            <motion.p
+              className="text-slate-400 text-lg max-w-xl mx-auto leading-relaxed"
+              variants={fadeUp}
+              custom={0.3}
+            >
+              No hold music. No missed leads. Your AI concierge is live right now — test it below.
+            </motion.p>
 
-            {/* ── Live Vapi Buttons (inline in Hero) ── */}
+            {/* ── Vapi Buttons (glassmorphic card wrapper) ── */}
             {prospect.vapi_public_key && prospect.vapi_assistant_id && (
-              <VapiCTA
-                companyName={companyName}
-                publicKey={prospect.vapi_public_key}
-                assistantId={prospect.vapi_assistant_id}
-                phoneNumber={prospect.vapi_phone_number}
-                theme={vapiTheme}
-              />
+              <motion.div
+                className="w-full max-w-lg bg-white/[0.04] backdrop-blur-md border border-white/10 rounded-2xl px-8 py-7 shadow-xl shadow-black/30"
+                variants={fadeUp}
+                custom={0.4}
+              >
+                <VapiCTA
+                  companyName={companyName}
+                  publicKey={prospect.vapi_public_key}
+                  assistantId={prospect.vapi_assistant_id}
+                  phoneNumber={prospect.vapi_phone_number}
+                  theme={vapiTheme}
+                />
+              </motion.div>
             )}
-          </div>
+          </motion.div>
         </div>
 
-        {/* Subtle diagonal accent */}
-        <div className="absolute top-0 right-0 w-1/3 h-full bg-amber-500/5 -skew-x-12 translate-x-1/2 pointer-events-none" />
+        {/* Diagonal accent stripe */}
+        <div className="absolute top-0 right-0 w-1/3 h-full bg-amber-500/[0.03] -skew-x-12 translate-x-1/2 pointer-events-none" />
       </section>
 
+      {/* ─── Brand & Portfolio Grid ───────────────────────────────────── */}
+      {imagesArray.length > 0 && (
+        <section id="portfolio" className="py-32 bg-[#07091A] relative overflow-hidden">
+          {/* Section glow */}
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-px bg-gradient-to-r from-transparent via-amber-500/40 to-transparent" />
+          </div>
 
-
-      {/* ─── Brand & Portfolio Grid ───────────────────────────────── */}
-      {prospect.post_images && prospect.post_images.length > 0 && (
-        <section id="portfolio" className="py-32 bg-[#07091A]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-24">
-              <p className="text-amber-500 text-sm tracking-[0.3em] uppercase mb-6 font-medium">
+            {/* Section header */}
+            <motion.div
+              className="text-center mb-20"
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-80px' }}
+              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <p className="text-amber-500 text-[11px] tracking-[0.4em] uppercase mb-5 font-semibold">
                 Your Presence
               </p>
               <h2 className="text-4xl sm:text-6xl font-serif font-light text-white">
                 Brand &amp; Portfolio
               </h2>
-            </div>
+              <div className="mt-6 mx-auto w-16 h-px bg-amber-500/50" />
+            </motion.div>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-              {prospect.post_images.map((imageUrl, index) => (
-                <div
+            {/* Grid */}
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {imagesArray.map((imageUrl, index) => (
+                <motion.div
                   key={index}
-                  className="group relative aspect-[4/5] overflow-hidden border border-amber-500/20 hover:border-amber-500/60 transition-colors duration-500"
+                  className="group relative aspect-[4/5] overflow-hidden rounded-sm border border-white/[0.07] hover:border-amber-500/40 transition-colors duration-500"
+                  initial={{ opacity: 0, y: 40 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-40px' }}
+                  transition={{
+                    duration: 0.65,
+                    ease: [0.22, 1, 0.36, 1],
+                    delay: (index % 3) * 0.1,
+                  }}
                 >
                   <img
                     src={imageUrl}
                     alt={`Brand Post ${index + 1}`}
-                    className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700"
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      const proxy = 'https://wsrv.nl/?url=' + encodeURIComponent(imageUrl);
+                      if (e.currentTarget.src !== proxy) {
+                        e.currentTarget.src = proxy;
+                      }
+                    }}
+                    className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-[1.06] transition-all duration-700"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0B132B]/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-8">
-                    <p className="text-amber-400 text-xs tracking-[0.2em] uppercase mb-2 font-medium">
+                  {/* Hover overlay — glassmorphic */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0B132B]/95 via-[#0B132B]/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-400 flex flex-col justify-end p-7 backdrop-blur-[1px]">
+                    <p className="text-amber-400 text-[10px] tracking-[0.3em] uppercase mb-2 font-semibold">
                       Brand Content
                     </p>
                     <a
@@ -201,24 +290,24 @@ export default function LandingPage() {
                       <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           </div>
         </section>
       )}
 
-      {/* ─── Footer ──────────────────────────────────────────────── */}
-      <footer className="bg-[#060810] border-t border-white/10 py-10">
+      {/* ─── Footer ──────────────────────────────────────────────────── */}
+      <footer className="bg-[#060810] border-t border-white/[0.06] py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-sm tracking-[0.2em] text-slate-500 uppercase font-light">
+          <p className="text-[11px] tracking-[0.3em] text-slate-600 uppercase font-light">
             AI Infrastructure by{' '}
-            <span className="text-amber-500 font-normal tracking-widest">CelestIA</span>
+            <span className="text-amber-500/80 font-normal tracking-widest">CelestIA</span>
           </p>
         </div>
       </footer>
 
-      {/* ─── Floating Vapi Button ────────────────────────────────── */}
+      {/* ─── Floating Vapi Button ─────────────────────────────────────── */}
       {prospect.vapi_public_key && prospect.vapi_assistant_id && (
         <VapiFAB
           publicKey={prospect.vapi_public_key}
