@@ -5,7 +5,7 @@ interface VapiCTAProps {
   companyName: string;
   publicKey: string;
   assistantId: string;
-  phoneNumber: string;
+  phoneNumber?: string;
   theme: {
     buttonBg: string;
     textColorClass: string;
@@ -14,11 +14,11 @@ interface VapiCTAProps {
 }
 
 export default function VapiCTA({
-  companyName,
+  companyName: _companyName,
   publicKey,
   assistantId,
   phoneNumber,
-  theme,
+  theme: _theme,
 }: VapiCTAProps) {
   const { startCall, isConnecting, isCallActive } = useVapi({
     publicKey,
@@ -28,38 +28,25 @@ export default function VapiCTA({
   if (!publicKey || !assistantId) return null;
 
   return (
-    <section className="py-16 px-4 sm:px-6 lg:px-8 border-t border-gray-200 bg-gradient-to-b from-white to-gray-50">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-8">
-          <h3 className="text-2xl sm:text-3xl font-serif font-bold text-[#1a1a2e] mb-4">
-            Hey <span className="text-[#16213e]">{companyName}</span>, I've built a tool that answers customer calls for you.
-          </h3>
-          <p className="text-[#1a1a2e]/70 text-lg max-w-2xl mx-auto">
-            Experience the future of customer service. Try our AI assistant for free today.
-          </p>
-        </div>
+    <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
+      <button
+        onClick={startCall}
+        disabled={isConnecting || isCallActive}
+        className="bg-amber-500 text-black px-10 py-4 text-sm tracking-widest font-bold uppercase shadow-lg shadow-amber-500/40 hover:bg-amber-400 hover:shadow-amber-400/50 hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center gap-3"
+      >
+        <Mic className="w-5 h-5" />
+        {isConnecting ? 'Connecting…' : isCallActive ? 'Call Active' : 'Test Voice Agent in Browser'}
+      </button>
 
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <button
-            onClick={startCall}
-            disabled={isConnecting || isCallActive}
-            className={`bg-gradient-to-r ${theme.buttonBg} text-white px-8 py-4 rounded-full font-semibold text-lg transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2`}
-          >
-            <Mic className="w-5 h-5" />
-            {isConnecting ? 'Connecting...' : isCallActive ? 'Call Active' : 'Test in Browser'}
-          </button>
-
-          {phoneNumber && (
-            <a
-              href={`tel:${phoneNumber}`}
-              className={`bg-gradient-to-r ${theme.buttonBg} text-white px-8 py-4 rounded-full font-semibold text-lg transition-all hover:scale-105 flex items-center gap-2`}
-            >
-              <Phone className="w-5 h-5" />
-              Call by Phone
-            </a>
-          )}
-        </div>
-      </div>
-    </section>
+      {phoneNumber && (
+        <a
+          href={`tel:${phoneNumber}`}
+          className="border border-amber-500 text-amber-400 px-10 py-4 text-sm tracking-widest font-semibold uppercase hover:bg-amber-500/10 transition-all flex items-center gap-3"
+        >
+          <Phone className="w-5 h-5" />
+          Call by Phone
+        </a>
+      )}
+    </div>
   );
 }
