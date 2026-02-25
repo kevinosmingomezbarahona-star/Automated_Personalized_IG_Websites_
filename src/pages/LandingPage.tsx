@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Menu, X, ExternalLink } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { supabase, Prospect } from '../lib/supabase';
-import { getTheme } from '../lib/themes';
 import { MagneticText } from '../components/ui/MagneticText';
 import Loader from '../components/Loader';
 import VapiCTA from '../components/VapiCTA';
@@ -12,7 +11,6 @@ export default function LandingPage() {
   const { slug } = useParams<{ slug: string }>();
   const [prospect, setProspect] = useState<Prospect | null>(null);
   const [loading, setLoading] = useState(true);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
@@ -37,9 +35,9 @@ export default function LandingPage() {
   }, [slug]);
 
   useEffect(() => {
-    if (prospect?.company_name || prospect?.full_name) {
-      const name = prospect.company_name || prospect.full_name;
-      document.title = `${name} - Premium Personal Brand`;
+    const name = prospect?.company_name || prospect?.full_name;
+    if (name) {
+      document.title = `${name} — AI-Powered Real Estate`;
     }
   }, [prospect]);
 
@@ -49,245 +47,167 @@ export default function LandingPage() {
 
   if (!prospect) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center px-4">
+      <div className="min-h-screen bg-[#0B132B] flex items-center justify-center px-4">
         <div className="text-center">
-          <h1 className="text-5xl font-serif text-[#16213e] mb-4">Premium Template</h1>
-          <p className="text-[#1a1a2e]/70 text-lg">This is a demo of our luxury personal brand platform.</p>
+          <h1 className="text-5xl font-serif text-white mb-4">Luxury Real Estate</h1>
+          <p className="text-amber-500 text-lg font-sans">Premium AI Concierge Experience</p>
         </div>
       </div>
     );
   }
 
-  const theme = getTheme(prospect.niche);
-  const heroHeadline = prospect.hero_headline || theme.heroHeadline;
-  const companyName = prospect.company_name || prospect.full_name || 'Your Brand';
+  const companyName = prospect.company_name || prospect.full_name || 'Exquisite Properties';
+  const headline = prospect.company_name || prospect.full_name || 'Defining Luxury Real Estate';
+  const biography =
+    prospect.business_profile ||
+    'Dedicated to delivering unparalleled real estate experiences powered by cutting-edge AI technology.';
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     element?.scrollIntoView({ behavior: 'smooth' });
-    setMobileMenuOpen(false);
   };
 
-  const bgClass = prospect.niche === 'fitness' ? 'bg-[#050505]' : 'bg-white';
-  const navBgClass = prospect.niche === 'fitness' ? 'bg-[#050505]/95 border-[#D4AF37]/20' : 'bg-white/95 border-gray-200';
-  const textColorClass = prospect.niche === 'fitness' ? 'text-[#F5F5F5]' : 'text-[#1a1a2e]';
-  const accentColorClass = prospect.niche === 'fitness' ? 'text-[#D4AF37]' : 'text-[#16213e]';
-  const cardBgClass = prospect.niche === 'fitness' ? 'from-[#1a1a1a] to-[#0a0a0a]' : 'from-[#f5f5f5] to-[#f9f9f9]';
-  const cardBorderClass = prospect.niche === 'fitness' ? 'border-[#D4AF37]/20' : 'border-gray-200';
-  const hoverBorderClass = prospect.niche === 'fitness' ? 'hover:border-[#D4AF37]/50' : 'hover:border-gray-400';
-
   const vapiTheme = {
-    buttonBg: theme.buttonBg,
-    textColorClass,
-    accentColorClass,
+    buttonBg: 'from-amber-500 to-amber-700',
+    textColorClass: 'text-white',
+    accentColorClass: 'text-amber-400',
   };
 
   return (
-    <div className={`min-h-screen ${bgClass} ${textColorClass}`}>
-      <nav className={`sticky top-0 z-40 ${navBgClass} backdrop-blur-lg border-b`}>
+    <div className="min-h-screen bg-[#0B132B] text-white font-sans selection:bg-amber-500/30 selection:text-white">
+
+      {/* ─── Navigation (Logo Only) ─────────────────────────────── */}
+      <nav className="sticky top-0 z-40 bg-[#0B132B]/95 backdrop-blur-lg border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
-            <div className={`text-2xl font-serif font-bold tracking-wide ${accentColorClass}`}>
-              {companyName}
+            <div className="text-2xl font-serif font-light tracking-[0.2em] text-white">
+              {companyName.toUpperCase()}
             </div>
-
-            <div className="hidden md:flex items-center gap-8">
-              <button
-                onClick={() => scrollToSection('services')}
-                className={`${textColorClass} ${accentColorClass} transition-colors hover:opacity-80`}
-              >
-                Services
-              </button>
-              <button
-                onClick={() => scrollToSection('portfolio')}
-                className={`${textColorClass} ${accentColorClass} transition-colors hover:opacity-80`}
-              >
-                Portfolio
-              </button>
-              <button
-                onClick={() => scrollToSection('contact')}
-                className={`${textColorClass} ${accentColorClass} transition-colors hover:opacity-80`}
-              >
-                Contact
-              </button>
-              <button
-                onClick={() => scrollToSection('hero')}
-                className={`bg-gradient-to-r ${theme.buttonBg} ${prospect.niche === 'fitness' ? 'text-[#050505]' : 'text-white'} px-6 py-2 rounded-full font-semibold ${theme.buttonHover} transition-all`}
-              >
-                Book Consultation
-              </button>
+            {/* AI badge */}
+            <div className="hidden sm:flex items-center gap-2 border border-amber-500/40 bg-amber-500/10 px-4 py-1.5 rounded-full">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+              <span className="text-xs tracking-widest text-amber-400 uppercase font-medium">AI Live Demo</span>
             </div>
-
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className={accentColorClass}
-            >
-              {mobileMenuOpen ? <X /> : <Menu />}
-            </button>
           </div>
         </div>
-
-        {mobileMenuOpen && (
-          <div className={`md:hidden border-t ${cardBorderClass} ${prospect.niche === 'fitness' ? 'bg-[#0a0a0a]' : 'bg-gray-50'}`}>
-            <div className="px-4 py-6 space-y-4">
-              <button
-                onClick={() => scrollToSection('services')}
-                className={`block w-full text-left ${textColorClass} ${accentColorClass} transition-colors py-2 hover:opacity-80`}
-              >
-                Services
-              </button>
-              <button
-                onClick={() => scrollToSection('portfolio')}
-                className={`block w-full text-left ${textColorClass} ${accentColorClass} transition-colors py-2 hover:opacity-80`}
-              >
-                Portfolio
-              </button>
-              <button
-                onClick={() => scrollToSection('contact')}
-                className={`block w-full text-left ${textColorClass} ${accentColorClass} transition-colors py-2 hover:opacity-80`}
-              >
-                Contact
-              </button>
-              <button
-                onClick={() => scrollToSection('hero')}
-                className={`w-full bg-gradient-to-r ${theme.buttonBg} ${prospect.niche === 'fitness' ? 'text-[#050505]' : 'text-white'} px-6 py-3 rounded-full font-semibold`}
-              >
-                Book Consultation
-              </button>
-            </div>
-          </div>
-        )}
       </nav>
 
-      <section id="hero" className={`relative min-h-screen flex items-center`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-            <div className="space-y-8">
-              <div className="min-h-[120px] flex items-center">
+      {/* ─── Hero Section ───────────────────────────────────────── */}
+      <section id="hero" className="relative min-h-[90vh] flex items-center overflow-hidden">
+        {/* Background glow */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-1/4 -left-32 w-96 h-96 bg-amber-500/10 rounded-full blur-[120px]" />
+          <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-amber-500/10 rounded-full blur-[120px]" />
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative z-10">
+          <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
+            <div className="space-y-10">
+              <div className="min-h-[100px] flex items-center">
                 <MagneticText
                   text={companyName.split(' ')[0]}
-                  hoverText="ELEVATE"
-                  textColor={accentColorClass}
-                  hoverColor={prospect.niche === 'fitness' ? 'text-[#050505]' : 'text-white'}
+                  hoverText="ESTATE"
+                  textColor="text-amber-500"
+                  hoverColor="text-white"
                   className="w-full"
                 />
               </div>
 
-              <h1 className={`text-3xl sm:text-4xl lg:text-5xl font-serif font-bold leading-tight ${textColorClass}`}>
-                {heroHeadline.split('.')[0]}.
+              <h1 className="text-4xl sm:text-5xl lg:text-7xl font-serif font-light leading-tight">
+                {headline}<span className="text-amber-500">.</span>
               </h1>
 
-              <p className={`text-lg sm:text-xl ${prospect.niche === 'fitness' ? 'text-[#F5F5F5]/80' : 'text-[#1a1a2e]/70'} leading-relaxed`}>
-                {prospect.business_profile || 'Transform your journey with personalized excellence and premium results.'}
+              <p className="text-lg text-slate-300 leading-relaxed font-sans max-w-lg">
+                {biography}
               </p>
 
-              <button className={`bg-gradient-to-r ${theme.buttonBg} ${prospect.niche === 'fitness' ? 'text-[#050505]' : 'text-white'} px-8 py-4 rounded-full font-semibold text-lg ${theme.buttonHover} transition-all hover:scale-105`}>
-                Start Your Transformation
-              </button>
+              {/* CTA Buttons */}
+              <div className="flex flex-col sm:flex-row gap-4">
+                <button
+                  onClick={() => scrollToSection('vapi-cta')}
+                  className="bg-amber-500 text-black px-10 py-4 text-sm tracking-widest font-semibold hover:bg-amber-400 transition-all uppercase shadow-lg shadow-amber-500/30 hover:shadow-amber-400/40"
+                >
+                  Test AI Receptionist
+                </button>
+                <button
+                  onClick={() => scrollToSection('portfolio')}
+                  className="border border-amber-500/40 text-white px-10 py-4 text-sm tracking-widest font-medium hover:bg-amber-500/10 transition-all uppercase"
+                >
+                  View Property Data
+                </button>
+              </div>
             </div>
 
+            {/* Profile Image */}
             <div className="relative">
-              {prospect.niche === 'fitness' && (
-                <div className="absolute inset-0 bg-gradient-to-r from-[#D4AF37] to-[#C5A028] rounded-3xl blur-3xl opacity-30"></div>
-              )}
+              <div className="absolute -inset-4 bg-amber-500/10 blur-3xl rounded-full" />
               <div className="relative">
                 {prospect.profilePicUrl && !imageError ? (
                   <img
                     src={prospect.profilePicUrl}
                     alt={companyName}
                     onError={() => setImageError(true)}
-                    className={`w-full aspect-[3/4] object-cover rounded-3xl ${prospect.niche === 'fitness' ? 'border-2 border-[#D4AF37]/30' : 'border-2 border-gray-300'} shadow-2xl`}
+                    className="w-full aspect-[4/5] object-cover rounded-sm hover:scale-[1.02] transition-transform duration-700 border border-amber-500/20 shadow-2xl shadow-amber-500/10"
                   />
-                ) : (
-                  <div className={`w-full aspect-[3/4] ${prospect.niche === 'fitness' ? 'bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] border-2 border-[#D4AF37]/30' : 'bg-gradient-to-br from-gray-100 to-gray-50 border-2 border-gray-300'} rounded-3xl flex items-center justify-center`}>
-                    <div className="text-center">
-                      <div className={`text-6xl font-serif font-bold mb-4 ${accentColorClass}`}>
-                        {companyName.charAt(0)}
-                      </div>
-                      <p className={prospect.niche === 'fitness' ? 'text-[#F5F5F5]/50' : 'text-[#1a1a2e]/50'}>
-                        {companyName}
-                      </p>
-                    </div>
-                  </div>
-                )}
+                ) : null}
               </div>
             </div>
           </div>
         </div>
+
+        {/* Diagonal accent stripe */}
+        <div className="absolute top-0 right-0 w-1/3 h-full bg-amber-500/5 -skew-x-12 translate-x-1/2 pointer-events-none" />
       </section>
 
-      {prospect.vapi_public_key && prospect.vapi_assistant_id && (
-        <VapiCTA
-          companyName={companyName}
-          publicKey={prospect.vapi_public_key}
-          assistantId={prospect.vapi_assistant_id}
-          phoneNumber={prospect.vapi_phone_number}
-          theme={vapiTheme}
-        />
-      )}
+      {/* ─── Vapi CTA Section ───────────────────────────────────── */}
+      <div id="vapi-cta">
+        {prospect.vapi_public_key && prospect.vapi_assistant_id && (
+          <VapiCTA
+            companyName={companyName}
+            publicKey={prospect.vapi_public_key}
+            assistantId={prospect.vapi_assistant_id}
+            phoneNumber={prospect.vapi_phone_number}
+            theme={vapiTheme}
+          />
+        )}
+      </div>
 
-      <section id="services" className={prospect.niche === 'fitness' ? 'py-20 bg-[#0a0a0a]' : 'py-20 bg-gray-50'}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className={`text-4xl sm:text-5xl font-serif font-bold text-center mb-4 ${textColorClass}`}>
-            Why Choose{' '}
-            <span className={accentColorClass}>{companyName}?</span>
-          </h2>
-          <p className={`text-center ${prospect.niche === 'fitness' ? 'text-[#F5F5F5]/60' : 'text-[#1a1a2e]/60'} mb-16 max-w-2xl mx-auto`}>
-            Exclusive services designed for those who demand excellence
-          </p>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {theme.services.map((service, index) => (
-              <div
-                key={index}
-                className={`bg-gradient-to-br ${cardBgClass} border ${cardBorderClass} rounded-2xl p-8 ${hoverBorderClass} transition-all hover:shadow-xl`}
-              >
-                <div className={`w-12 h-1 bg-gradient-to-r ${theme.buttonBg} mb-6`}></div>
-                <h3 className={`text-2xl font-serif font-bold mb-4 ${textColorClass} hover:${accentColorClass} transition-colors`}>
-                  {service.title}
-                </h3>
-                <p className={`${prospect.niche === 'fitness' ? 'text-[#F5F5F5]/70' : 'text-[#1a1a2e]/70'} leading-relaxed`}>
-                  {service.description}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
+      {/* ─── Property Image Grid ───────────────────────────────── */}
       {prospect.post_images && prospect.post_images.length > 0 && (
-        <section id="portfolio" className={`py-20 ${bgClass}`}>
+        <section id="portfolio" className="py-32 bg-[#07091A]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className={`text-4xl sm:text-5xl font-serif font-bold text-center mb-4 ${textColorClass}`}>
-              {theme.sectionTitle}
-            </h2>
-            <p className={`text-center ${prospect.niche === 'fitness' ? 'text-[#F5F5F5]/60' : 'text-[#1a1a2e]/60'} mb-16`}>
-              A showcase of transformative work
-            </p>
+            <div className="text-center mb-24">
+              <h2 className="text-amber-500 text-sm tracking-[0.3em] uppercase mb-6 font-medium">
+                The Collection
+              </h2>
+              <h3 className="text-4xl sm:text-6xl font-serif font-light text-white">
+                Curated Residences
+              </h3>
+            </div>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {prospect.post_images.map((imageUrl, index) => (
                 <div
                   key={index}
-                  className={`group relative aspect-square overflow-hidden rounded-2xl border ${prospect.niche === 'fitness' ? 'border-[#D4AF37]/20 hover:border-[#D4AF37]/50' : 'border-gray-300 hover:border-gray-400'} transition-all`}
+                  className="group relative aspect-[4/5] overflow-hidden border border-amber-500/20 hover:border-amber-500/60 transition-colors duration-500"
                 >
                   <img
                     src={imageUrl}
-                    alt={`Portfolio item ${index + 1}`}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    alt={`Luxury Property ${index + 1}`}
+                    className="w-full h-full object-cover opacity-85 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700"
                   />
-                  <div className={`absolute inset-0 ${prospect.niche === 'fitness' ? 'bg-gradient-to-t from-[#050505] via-[#050505]/50 to-transparent' : 'bg-gradient-to-t from-black via-black/50 to-transparent'} opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6`}>
-                    <p className={`${prospect.niche === 'fitness' ? 'text-[#F5F5F5]' : 'text-white'} mb-4 text-sm font-medium`}>
-                      Featured Work
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0B132B]/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-8">
+                    <p className="text-amber-400 text-xs tracking-[0.2em] uppercase mb-2 font-medium">
+                      Exquisite Dwelling
                     </p>
                     <a
                       href="#"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`flex items-center gap-2 ${accentColorClass} ${prospect.niche === 'fitness' ? 'hover:text-[#F5F5F5]' : 'hover:text-white'} transition-colors`}
+                      className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors text-sm"
                     >
-                      <span>View Details</span>
-                      <ExternalLink className="w-4 h-4" />
+                      <span>Explore Detail</span>
+                      <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>
                 </div>
@@ -297,33 +217,28 @@ export default function LandingPage() {
         </section>
       )}
 
-      <section id="contact" className={prospect.niche === 'fitness' ? 'py-20 bg-[#0a0a0a]' : 'py-20 bg-gray-50'}>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className={`text-4xl sm:text-5xl font-serif font-bold mb-6 ${textColorClass}`}>
-            Ready to{' '}
-            <span className={accentColorClass}>Begin?</span>
-          </h2>
-          <p className={`text-xl ${prospect.niche === 'fitness' ? 'text-[#F5F5F5]/80' : 'text-[#1a1a2e]/80'} mb-10 max-w-2xl mx-auto`}>
-            Take the first step towards exceptional results. Book your exclusive consultation today.
-          </p>
-          <button className={`bg-gradient-to-r ${theme.buttonBg} ${prospect.niche === 'fitness' ? 'text-[#050505]' : 'text-white'} px-10 py-4 rounded-full font-semibold text-lg ${theme.buttonHover} transition-all hover:scale-105`}>
-            Schedule Consultation
-          </button>
-        </div>
-      </section>
-
-      <footer className={`border-t ${prospect.niche === 'fitness' ? 'border-[#D4AF37]/20' : 'border-gray-300'} py-8`}>
+      {/* ─── Footer ────────────────────────────────────────────── */}
+      <footer className="bg-[#060810] border-t border-white/10 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className={`text-center ${prospect.niche === 'fitness' ? 'text-[#F5F5F5]/50' : 'text-[#1a1a2e]/50'}`}>
-            <p className="mb-2">&copy; {new Date().getFullYear()} {companyName}. All rights reserved.</p>
-            <p className="text-sm">
-              Powered by{' '}
-              <span className={`${accentColorClass} font-semibold`}>CelestIA</span>
-            </p>
+          <div className="flex flex-col md:flex-row justify-between items-center gap-8">
+            <div className="text-xl font-serif tracking-[0.2em] font-light text-white">
+              {companyName.toUpperCase()}
+            </div>
+
+            <div className="flex flex-col items-center gap-1">
+              <p className="text-xs tracking-[0.2em] text-slate-500 uppercase font-light">
+                &copy; {new Date().getFullYear()} {companyName}
+              </p>
+              <p className="text-[10px] tracking-[0.15em] uppercase text-slate-600 font-light">
+                Powered by{' '}
+                <span className="text-amber-500 font-normal">CelestIA</span>
+              </p>
+            </div>
           </div>
         </div>
       </footer>
 
+      {/* ─── Floating Vapi Button ───────────────────────────────── */}
       {prospect.vapi_public_key && prospect.vapi_assistant_id && (
         <VapiFAB
           publicKey={prospect.vapi_public_key}

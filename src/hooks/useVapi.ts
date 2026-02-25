@@ -14,9 +14,7 @@ export function useVapi({ publicKey, assistantId }: UseVapiProps) {
   useEffect(() => {
     if (!publicKey) return;
 
-    vapiRef.current = new Vapi({
-      apiKey: publicKey,
-    });
+    vapiRef.current = new Vapi(publicKey);
 
     const handleCallStart = () => {
       setIsCallActive(true);
