@@ -44,8 +44,42 @@ export default function LandingPage() {
   }, [slug]);
 
   useEffect(() => {
-    const name = prospect?.company_name || prospect?.full_name;
-    if (name) document.title = `${name} — AI-Powered Real Estate`;
+    if (!prospect) return;
+
+    const fullName = prospect.full_name || prospect.company_name || 'Your Host';
+    const title = `${fullName} x CelestIA | Private Demo`;
+    const description = prospect.business_summary || `${fullName} — Powered by CelestIA AI.`;
+
+    // Prefer site screenshot; fall back to profile pic
+    const cleanUrl = (url?: string | null) => (url || '').replace(/^=+/, '').trim();
+    const screenshotUrl = cleanUrl(prospect.site_screenshot_url);
+    const picUrl = cleanUrl(prospect.profilePicUrl || prospect.profile_pic_url);
+    const ogImage = screenshotUrl || picUrl;
+
+    // Helper: get or create a <meta> tag by property/name attribute
+    const setMeta = (attr: 'property' | 'name', key: string, content: string) => {
+      let tag = document.querySelector<HTMLMetaElement>(`meta[${attr}="${key}"]`);
+      if (!tag) {
+        tag = document.createElement('meta');
+        tag.setAttribute(attr, key);
+        document.head.appendChild(tag);
+      }
+      tag.setAttribute('content', content);
+    };
+
+    document.title = title;
+    setMeta('property', 'og:title', title);
+    setMeta('property', 'og:description', description);
+    setMeta('property', 'og:image', ogImage);
+    setMeta('name', 'twitter:card', 'summary_large_image');
+    setMeta('name', 'twitter:title', title);
+    setMeta('name', 'twitter:description', description);
+    setMeta('name', 'twitter:image', ogImage);
+
+    return () => {
+      // Reset to generic defaults on unmount / slug change
+      document.title = 'CelestIA | Private Demo';
+    };
   }, [prospect]);
 
   if (loading) return <Loader />;

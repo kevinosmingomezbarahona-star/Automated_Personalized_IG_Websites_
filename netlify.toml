@@ -1,0 +1,14 @@
+[build]
+  publish = "dist"
+  command = "npm run build"
+
+# Route /p/* through the OG proxy edge function (intercepts bot crawlers)
+[[edge_functions]]
+  path = "/p/*"
+  function = "og-proxy"
+
+# SPA catch-all: serve index.html for all unmatched routes (required for React Router)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

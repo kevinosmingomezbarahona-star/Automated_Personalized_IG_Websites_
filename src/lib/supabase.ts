@@ -21,6 +21,8 @@ export interface Prospect {
   posts?: { image_url: string; caption: string; instagram_url: string }[];
   post_images: string[];
   niche: 'fitness' | 'legal' | 'corporate' | 'ecommerce' | 'fashion';
+  business_summary?: string;
+  site_screenshot_url?: string;
   hero_headline?: string;
   vapi_assistant_id: string;
   vapi_public_key: string;
