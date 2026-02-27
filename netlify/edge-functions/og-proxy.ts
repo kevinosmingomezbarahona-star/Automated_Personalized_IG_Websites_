@@ -46,9 +46,9 @@ export default async function handler(request: Request, context: Context) {
         return context.next();
     }
 
-    // Extract slug from /p/:slug
+    // Extract slug from /p/:slug — normalised to lowercase for case-insensitive matching
     const url = new URL(request.url);
-    const slug = url.pathname.replace(/^\/p\//, "").split("/")[0];
+    const slug = url.pathname.replace(/^\/p\//, "").split("/")[0].toLowerCase();
 
     if (!slug) {
         return context.next();
@@ -61,6 +61,7 @@ export default async function handler(request: Request, context: Context) {
     let fullName = "CelestIA Demo";
     let description = "Your private AI-powered demo experience, built by CelestIA.";
     let ogImage = "";
+    let debugStatus = "no-data";
 
     if (supabaseUrl && supabaseKey) {
         try {
@@ -73,6 +74,9 @@ export default async function handler(request: Request, context: Context) {
                 "full_name,business_summary,profile_pic_url,site_screenshot_url"
             );
             query.searchParams.set("limit", "1");
+
+            // [DEBUG] Log exact query so it appears in Netlify Function logs
+            console.log("[og-proxy] Supabase query:", query.toString());
 
             const res = await fetch(query.toString(), {
                 headers: {
@@ -103,9 +107,17 @@ export default async function handler(request: Request, context: Context) {
                     // Image waterfall: site_screenshot_url → profile_pic_url
                     const clean = (u?: string | null) => (u ?? "").replace(/^=+/, "").trim();
                     ogImage = clean(prospect.site_screenshot_url) || clean(prospect.profile_pic_url);
+                    debugStatus = "success";
+                } else {
+                    debugStatus = "no-match";
+                    console.log(`[og-proxy] No prospect found for slug: "${slug}"`);
                 }
+            } else {
+                debugStatus = "fetch-error";
+                console.error(`[og-proxy] Supabase HTTP ${res.status}:`, await res.text());
             }
         } catch (err) {
+            debugStatus = "fetch-error";
             console.error("[og-proxy] Supabase fetch error:", err);
             // Graceful degradation: use default values set above
         }
@@ -155,6 +167,8 @@ export default async function handler(request: Request, context: Context) {
             "content-type": "text/html; charset=utf-8",
             // Allow crawlers to cache the response briefly (5 minutes)
             "cache-control": "public, max-age=300, s-maxage=300",
+            // [DEBUG] Expose Supabase fetch outcome for inspection via curl
+            "x-debug-status": debugStatus,
         },
     });
 }
