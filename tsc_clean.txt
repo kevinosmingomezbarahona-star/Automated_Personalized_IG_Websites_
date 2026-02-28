@@ -1,0 +1,6 @@
+src/components/ui/card.tsx(2,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+src/components/ui/SplineSceneBasic.tsx(1,29): error TS2307: Cannot find module '@/components/ui/splite' or its corresponding type declarations.
+src/components/ui/SplineSceneBasic.tsx(2,22): error TS2307: Cannot find module '@/components/ui/card' or its corresponding type declarations.
+src/components/ui/SplineSceneBasic.tsx(3,27): error TS2307: Cannot find module '@/components/ui/spotlight' or its corresponding type declarations.
+src/components/ui/spotlight.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/ui/spotlight.tsx(2,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.

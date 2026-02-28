@@ -11,6 +11,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.app.json"
   },
   "dependencies": {
+    "@splinetool/react-spline": "^4.1.0",
+    "@splinetool/runtime": "^1.12.61",
     "@supabase/supabase-js": "^2.57.4",
     "@vapi-ai/web": "^2.5.2",
     "framer-motion": "^12.34.3",

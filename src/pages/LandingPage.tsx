@@ -6,6 +6,7 @@ import { supabase, Prospect } from '../lib/supabase';
 import Loader from '../components/Loader';
 import VapiCTA from '../components/VapiCTA';
 import VapiFAB from '../components/VapiFAB';
+import { SplineSceneBasic } from '../components/ui/SplineSceneBasic';
 
 // ── Reusable animation variants ──────────────────────────────────────────────
 const fadeUp = {
@@ -13,7 +14,7 @@ const fadeUp = {
   show: (delay = 0) => ({
     opacity: 1,
     y: 0,
-    transition: { duration: 0.75, ease: [0.22, 1, 0.36, 1], delay },
+    transition: { duration: 0.75, ease: [0.22, 1, 0.36, 1] as [number, number, number, number], delay },
   }),
 };
 
@@ -249,6 +250,18 @@ export default function LandingPage() {
                 />
               </motion.div>
             )}
+
+            {/* ── 3D Robot Assistant ── */}
+            <motion.div
+              className="w-full max-w-lg"
+              variants={fadeUp}
+              custom={0.5}
+            >
+              <SplineSceneBasic
+                publicKey={prospect.vapi_public_key || undefined}
+                assistantId={prospect.vapi_assistant_id || undefined}
+              />
+            </motion.div>
           </motion.div>
         </div>
 
