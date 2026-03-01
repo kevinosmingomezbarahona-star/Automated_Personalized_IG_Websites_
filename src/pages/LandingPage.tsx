@@ -8,6 +8,7 @@ import VapiCTA from '../components/VapiCTA';
 import VapiFAB from '../components/VapiFAB';
 import { SplineSceneBasic } from '../components/ui/SplineSceneBasic';
 import { Marquee } from '../components/ui/marquee';
+import { StickySidebar } from '../components/ui/StickySidebar';
 
 // ── Reusable animation variants ──────────────────────────────────────────────
 const fadeUp = {
@@ -128,6 +129,8 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[#0B132B] text-white font-sans selection:bg-amber-500/30 selection:text-white">
 
+      <StickySidebar />
+
       {/* ─── Navigation ──────────────────────────────────────────────── */}
       <nav className="sticky top-0 z-40 backdrop-blur-xl bg-[#0B132B]/80 border-b border-white/[0.06]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -238,7 +241,8 @@ export default function LandingPage() {
             {/* ── Vapi Buttons (glassmorphic card wrapper) ── */}
             {prospect.vapi_public_key && prospect.vapi_assistant_id && (
               <motion.div
-                className="w-full max-w-lg bg-white/[0.04] backdrop-blur-md border border-white/10 rounded-2xl px-8 py-7 shadow-xl shadow-black/30"
+                id="voice-agent-test"
+                className="w-full max-w-lg bg-white/[0.04] backdrop-blur-md border border-white/10 rounded-2xl px-8 py-7 shadow-xl shadow-black/30 scroll-mt-32"
                 variants={fadeUp}
                 custom={0.4}
               >
@@ -272,7 +276,7 @@ export default function LandingPage() {
 
       {/* ─── Brand & Portfolio Grid ───────────────────────────────────── */}
       {imagesArray.length > 0 && (
-        <section id="portfolio" className="py-32 bg-[#07091A] relative overflow-hidden">
+        <section id="ig-portfolio" className="py-32 bg-[#07091A] relative overflow-hidden">
           {/* Section glow */}
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-px bg-gradient-to-r from-transparent via-amber-500/40 to-transparent" />
