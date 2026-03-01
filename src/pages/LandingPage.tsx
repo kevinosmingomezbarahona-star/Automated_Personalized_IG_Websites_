@@ -7,6 +7,7 @@ import Loader from '../components/Loader';
 import VapiCTA from '../components/VapiCTA';
 import VapiFAB from '../components/VapiFAB';
 import { SplineSceneBasic } from '../components/ui/SplineSceneBasic';
+import { Marquee } from '../components/ui/marquee';
 
 // ── Reusable animation variants ──────────────────────────────────────────────
 const fadeUp = {
@@ -295,50 +296,52 @@ export default function LandingPage() {
               <div className="mt-6 mx-auto w-16 h-px bg-amber-500/50" />
             </motion.div>
 
-            {/* Grid */}
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {imagesArray.map((imageUrl, index) => (
-                <motion.div
-                  key={index}
-                  className="group relative aspect-[4/5] overflow-hidden rounded-sm border border-white/[0.07] hover:border-amber-500/40 transition-colors duration-500"
-                  initial={{ opacity: 0, y: 40 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: '-40px' }}
-                  transition={{
-                    duration: 0.65,
-                    ease: [0.22, 1, 0.36, 1],
-                    delay: (index % 3) * 0.1,
-                  }}
-                >
-                  <img
-                    src={imageUrl}
-                    alt={`Brand Post ${index + 1}`}
-                    referrerPolicy="no-referrer"
-                    onError={(e) => {
-                      const proxy = 'https://wsrv.nl/?url=' + encodeURIComponent(imageUrl);
-                      if (e.currentTarget.src !== proxy) {
-                        e.currentTarget.src = proxy;
-                      }
+            {/* Marquee Wrapper for Brand & Portfolio Grid */}
+            <div className="relative flex w-full flex-col items-center justify-center overflow-hidden">
+              <Marquee pauseOnHover className="[--duration:20s]">
+                {imagesArray.map((imageUrl, index) => (
+                  <motion.div
+                    key={index}
+                    className="group relative w-72 sm:w-80 lg:w-96 aspect-[4/5] overflow-hidden rounded-sm border border-white/[0.07] hover:border-amber-500/40 transition-colors duration-500"
+                    initial={{ opacity: 0, y: 40 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: '-40px' }}
+                    transition={{
+                      duration: 0.65,
+                      ease: [0.22, 1, 0.36, 1],
+                      delay: (index % 3) * 0.1,
                     }}
-                    className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-[1.06] transition-all duration-700"
-                  />
-                  {/* Hover overlay — glassmorphic */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0B132B]/95 via-[#0B132B]/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-400 flex flex-col justify-end p-7 backdrop-blur-[1px]">
-                    <p className="text-amber-400 text-[10px] tracking-[0.3em] uppercase mb-2 font-semibold">
-                      Brand Content
-                    </p>
-                    <a
-                      href="#"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors text-sm"
-                    >
-                      <span>View Post</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </div>
-                </motion.div>
-              ))}
+                  >
+                    <img
+                      src={imageUrl}
+                      alt={`Brand Post ${index + 1}`}
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        const proxy = 'https://wsrv.nl/?url=' + encodeURIComponent(imageUrl);
+                        if (e.currentTarget.src !== proxy) {
+                          e.currentTarget.src = proxy;
+                        }
+                      }}
+                      className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-[1.06] transition-all duration-700"
+                    />
+                    {/* Hover overlay — glassmorphic */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0B132B]/95 via-[#0B132B]/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-400 flex flex-col justify-end p-7 backdrop-blur-[1px]">
+                      <p className="text-amber-400 text-[10px] tracking-[0.3em] uppercase mb-2 font-semibold">
+                        Brand Content
+                      </p>
+                      <a
+                        href="#"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors text-sm"
+                      >
+                        <span>View Post</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+                  </motion.div>
+                ))}
+              </Marquee>
             </div>
           </div>
         </section>
