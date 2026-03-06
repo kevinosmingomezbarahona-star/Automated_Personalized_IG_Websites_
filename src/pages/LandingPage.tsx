@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { ExternalLink } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { ExternalLink, ChevronDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase, Prospect } from '../lib/supabase';
 import Loader from '../components/Loader';
 import VapiCTA from '../components/VapiCTA';
@@ -9,6 +9,9 @@ import VapiFAB from '../components/VapiFAB';
 import { SplineSceneBasic } from '../components/ui/SplineSceneBasic';
 import { Marquee } from '../components/ui/marquee';
 import { StickySidebar } from '../components/ui/StickySidebar';
+import { ScrollVideoCanvas } from '../components/ui/ScrollVideoCanvas';
+import { useDelayedReveal } from '../hooks/useDelayedReveal';
+import { Typewriter } from '../components/ui/typewriter';
 
 // ── Reusable animation variants ──────────────────────────────────────────────
 const fadeUp = {
@@ -29,7 +32,12 @@ export default function LandingPage() {
   const { slug } = useParams<{ slug: string }>();
   const [prospect, setProspect] = useState<Prospect | null>(null);
   const [loading, setLoading] = useState(true);
-  const [imageError, setImageError] = useState(false);
+
+  // ── Headless Browser Optimization (Directive 1) ───────────────────────────
+  // Heavy assets (3D bot, ScrollVideoCanvas, Marquee) are withheld from render
+  // until 2.5 s after DOM load OR the user's first scroll — whichever is first.
+  // This ensures Microlink captures a fast, clean hero screenshot every time.
+  const heavyAssetsReady = useDelayedReveal(2500);
 
   useEffect(() => {
     async function fetchProspect() {
@@ -53,13 +61,11 @@ export default function LandingPage() {
     const title = `${fullName} x CelestIA | Private Demo`;
     const description = prospect.business_summary || `${fullName} — Powered by CelestIA AI.`;
 
-    // Prefer site screenshot; fall back to profile pic
     const cleanUrl = (url?: string | null) => (url || '').replace(/^=+/, '').trim();
     const screenshotUrl = cleanUrl(prospect.site_screenshot_url);
     const picUrl = cleanUrl(prospect.profilePicUrl || prospect.profile_pic_url);
     const ogImage = screenshotUrl || picUrl;
 
-    // Helper: get or create a <meta> tag by property/name attribute
     const setMeta = (attr: 'property' | 'name', key: string, content: string) => {
       let tag = document.querySelector<HTMLMetaElement>(`meta[${attr}="${key}"]`);
       if (!tag) {
@@ -80,7 +86,6 @@ export default function LandingPage() {
     setMeta('name', 'twitter:image', ogImage);
 
     return () => {
-      // Reset to generic defaults on unmount / slug change
       document.title = 'CelestIA | Private Demo';
     };
   }, [prospect]);
@@ -112,13 +117,17 @@ export default function LandingPage() {
 
   let imagesArray: string[] = [];
   try {
-    const raw = Array.isArray(prospect.post_images)
-      ? prospect.post_images
-      : JSON.parse(prospect.post_images as unknown as string);
-    imagesArray = (raw as string[]).map(cleanUrl).filter(Boolean);
+    if (Array.isArray(prospect.post_images)) {
+      imagesArray = prospect.post_images;
+    } else if (typeof prospect.post_images === 'string' && (prospect.post_images as string).trim() !== '') {
+      imagesArray = JSON.parse(prospect.post_images);
+    }
+    // Ensure we only keep valid strings
+    imagesArray = imagesArray.filter(url => typeof url === 'string' && url.includes('http')).map(cleanUrl);
   } catch (e) {
-    console.error('Failed to parse post_images:', e);
+    console.warn("Caught post_images parse error, falling back to empty array.", e);
   }
+
 
   const vapiTheme = {
     buttonBg: 'from-amber-500 to-amber-700',
@@ -135,7 +144,7 @@ export default function LandingPage() {
       <nav className="sticky top-0 z-40 backdrop-blur-xl bg-[#0B132B]/80 border-b border-white/[0.06]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
-            {/* Logo — glassmorphic pill */}
+            {/* Logo */}
             <div className="text-xl sm:text-2xl font-serif font-light tracking-[0.22em] text-white">
               {companyName.toUpperCase()}
             </div>
@@ -150,9 +159,11 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* ─── Hero Section ────────────────────────────────────────────── */}
+      {/* ─── Hero Section ─────────────────────────────────────────────── */}
+      {/* DIRECTIVE 1: This section is pure HTML/CSS/text — zero render-blocking. */}
+      {/* DIRECTIVE 2: Updated H1 + subheader copy pulling companyName dynamically. */}
       <section id="hero" className="relative min-h-[92vh] flex items-center overflow-hidden">
-        {/* Ambient glows */}
+        {/* Ambient glows — pure CSS, no JS */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-amber-500/[0.07] rounded-full blur-[160px]" />
           <div className="absolute top-1/4 -left-40 w-96 h-96 bg-amber-600/10 rounded-full blur-[130px]" />
@@ -182,20 +193,15 @@ export default function LandingPage() {
               {/* Hard gold ring */}
               <div className="absolute -inset-[3px] rounded-full bg-gradient-to-br from-amber-400 via-amber-600 to-amber-900 opacity-70 blur-[2px]" />
 
-              {profilePic && !imageError ? (
+              {profilePic ? (
                 <img
-                  src={profilePic}
+                  src={"https://images.weserv.nl/?url=" + encodeURIComponent(profilePic) + "&default=https://placehold.co/400x400?text=Image+Loading"}
                   alt={companyName}
                   referrerPolicy="no-referrer"
                   onError={(e) => {
-                    const proxy = 'https://wsrv.nl/?url=' + encodeURIComponent(profilePic);
-                    if (e.currentTarget.src !== proxy) {
-                      e.currentTarget.src = proxy;
-                    } else {
-                      setImageError(true);
-                    }
+                    e.currentTarget.style.display = 'none';
                   }}
-                  className="relative w-40 h-40 sm:w-56 sm:h-56 lg:w-72 lg:h-72 object-cover rounded-full border border-amber-500/40 shadow-2xl shadow-amber-500/20"
+                  className="relative w-40 h-40 sm:w-56 sm:h-56 lg:w-72 lg:h-72 object-cover rounded-full shadow-2xl shadow-amber-500/20"
                 />
               ) : (
                 <div className="relative w-40 h-40 sm:w-56 sm:h-56 lg:w-72 lg:h-72 rounded-full border border-amber-500/40 bg-[#0F1E3A] flex items-center justify-center shadow-2xl shadow-amber-500/20">
@@ -206,36 +212,26 @@ export default function LandingPage() {
               )}
             </motion.div>
 
-            {/* ── Eyebrow label ── */}
-            <motion.p
-              className="text-amber-400/80 text-[11px] tracking-[0.4em] uppercase font-semibold"
+            {/* ── Unified Massive Hero Header (Directive 1) ── */}
+            <motion.h1
+              className="text-4xl md:text-5xl lg:text-6xl font-serif font-medium tracking-tight leading-snug text-white max-w-5xl mx-auto h-[280px] sm:h-[220px] md:h-[240px] lg:h-[280px] relative w-full flex flex-col items-center justify-center text-center overflow-hidden"
+              style={{ fontFamily: "'Playfair Display', serif", fontWeight: 600 }}
               variants={fadeUp}
               custom={0.1}
             >
-              Private AI Demo — For {companyName}
-            </motion.p>
+              <span>Hey {companyName}. I have built an AI sales agent that helps elite real estate teams like yours{' '}</span>
+              <span className="left-0 right-0 mx-auto w-full flex justify-center font-serif italic font-normal text-amber-500 absolute bottom-4 sm:bottom-0 text-center">
+                <Typewriter text={["24/7.", "while you sleep.", "instantly.", "every single day.", "without taking breaks."]} speed={70} waitTime={2000} />
+              </span>
+            </motion.h1>
 
-            {/* ── Headline ── */}
-            <motion.h1
-              className="text-3xl sm:text-5xl lg:text-6xl font-serif font-light leading-[1.15] text-white max-w-4xl"
+            {/* ── Subheader (Directive 1) ── */}
+            <motion.p
+              className="text-lg text-slate-300 font-light leading-relaxed max-w-3xl mx-auto"
               variants={fadeUp}
               custom={0.2}
             >
-              Hey{' '}
-              <span className="text-amber-400 italic">{companyName}</span>
-              , I've built a custom{' '}
-              <span className="text-amber-500">AI Receptionist</span>{' '}
-              that answers your client calls{' '}
-              <span className="italic">24/7.</span>
-            </motion.h1>
-
-            {/* ── Subheadline ── */}
-            <motion.p
-              className="text-slate-400 text-lg max-w-xl mx-auto leading-relaxed"
-              variants={fadeUp}
-              custom={0.3}
-            >
-              No hold music. No missed leads. Your AI concierge is live right now — test it below.
+              It will capture high-intent buyers without losing deals to slow response times. We do this through a zero-latency automated qualification layer that seamlessly syncs with your CRM, completely removing human speed and manual follow-ups as a failure point. The next step is calling the demo below to test the latency for yourself.
             </motion.p>
 
             {/* ── Vapi Buttons (glassmorphic card wrapper) ── */}
@@ -244,7 +240,7 @@ export default function LandingPage() {
                 id="voice-agent-test"
                 className="w-full max-w-lg bg-white/[0.04] backdrop-blur-md border border-white/10 rounded-2xl px-8 py-7 shadow-xl shadow-black/30 scroll-mt-32"
                 variants={fadeUp}
-                custom={0.4}
+                custom={0.3}
               >
                 <VapiCTA
                   companyName={companyName}
@@ -255,28 +251,84 @@ export default function LandingPage() {
                 />
               </motion.div>
             )}
-
-            {/* ── 3D Robot Assistant ── */}
-            <motion.div
-              className="w-full max-w-lg"
-              variants={fadeUp}
-              custom={0.5}
-            >
-              <SplineSceneBasic
-                publicKey={prospect.vapi_public_key || undefined}
-                assistantId={prospect.vapi_assistant_id || undefined}
-              />
-            </motion.div>
           </motion.div>
         </div>
 
         {/* Diagonal accent stripe */}
         <div className="absolute top-0 right-0 w-1/3 h-full bg-amber-500/[0.03] -skew-x-12 translate-x-1/2 pointer-events-none" />
+
+        {/* ── Scroll Cue (Directive 3) ── */}
+        {/* Fades out once the user scrolls (heavyAssetsReady becomes true) */}
+        <AnimatePresence>
+          {!heavyAssetsReady && (
+            <motion.div
+              className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 pointer-events-none"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8, transition: { duration: 0.4 } }}
+              transition={{ delay: 1.2, duration: 0.6 }}
+            >
+              <span className="text-[10px] tracking-[0.35em] text-amber-400/70 uppercase font-semibold">
+                Scroll to Test AI Concierge
+              </span>
+              <ChevronDown
+                className="w-5 h-5 text-amber-400/60 animate-bounce"
+                strokeWidth={1.5}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </section>
 
-      {/* ─── Brand & Portfolio Grid ───────────────────────────────────── */}
-      {imagesArray.length > 0 && (
-        <section id="ig-portfolio" className="py-32 bg-[#07091A] relative overflow-hidden">
+      {/* ─── 3D Robot Assistant (LAZY — Directive 1) ──────────────────── */}
+      {/* Withheld from render until 2.5 s post-load OR first scroll.       */}
+      {heavyAssetsReady ? (
+        <motion.div
+          className="w-full flex justify-center px-4"
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <div className="w-full max-w-5xl">
+            <SplineSceneBasic
+              publicKey={prospect.vapi_public_key || undefined}
+              assistantId={prospect.vapi_assistant_id || undefined}
+              businessSummary={prospect.business_summary || undefined}
+            />
+          </div>
+        </motion.div>
+      ) : (
+        // Placeholder preserves layout height so page doesn't jump
+        <div className="w-full flex justify-center px-4">
+          <div className="w-full max-w-5xl h-[580px]" aria-hidden="true" />
+        </div>
+      )}
+
+      {/* ─── Scroll Video Canvas Animation (LAZY — Directive 1) ────────── */}
+      {heavyAssetsReady ? (
+        <motion.section
+          id="scroll-video-canvas"
+          className="relative z-20"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6 }}
+        >
+          <ScrollVideoCanvas companyName={companyName} />
+        </motion.section>
+      ) : (
+        // Placeholder keeps the layout space reserved
+        <div id="scroll-video-canvas" className="relative z-20 h-[50vh]" aria-hidden="true" />
+      )}
+
+      {/* ─── Brand & Portfolio Grid (LAZY — Directive 1) ──────────────── */}
+      {imagesArray.length > 0 && heavyAssetsReady && (
+        <motion.section
+          id="ig-portfolio"
+          className="py-32 bg-[#07091A] relative overflow-hidden"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6 }}
+        >
           {/* Section glow */}
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-px bg-gradient-to-r from-transparent via-amber-500/40 to-transparent" />
@@ -301,12 +353,12 @@ export default function LandingPage() {
             </motion.div>
 
             {/* Marquee Wrapper for Brand & Portfolio Grid */}
-            <div className="relative flex w-full flex-col items-center justify-center overflow-hidden">
-              <Marquee pauseOnHover className="[--duration:20s]">
+            <div className="relative flex w-full flex-col items-center justify-center overflow-hidden min-h-[500px] py-4">
+              <Marquee pauseOnHover className="[--duration:20s] h-full flex items-center">
                 {imagesArray.map((imageUrl, index) => (
                   <motion.div
                     key={index}
-                    className="group relative w-72 sm:w-80 lg:w-96 aspect-[4/5] overflow-hidden rounded-sm border border-white/[0.07] hover:border-amber-500/40 transition-colors duration-500"
+                    className="group relative flex w-72 sm:w-80 lg:w-96 aspect-[4/5] overflow-hidden rounded-sm border border-white/[0.07] hover:border-amber-500/40 transition-colors duration-500"
                     initial={{ opacity: 0, y: 40 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: '-40px' }}
@@ -317,16 +369,13 @@ export default function LandingPage() {
                     }}
                   >
                     <img
-                      src={imageUrl}
+                      src={"https://images.weserv.nl/?url=" + encodeURIComponent(imageUrl) + "&default=https://placehold.co/400x400?text=Image+Loading"}
                       alt={`Brand Post ${index + 1}`}
                       referrerPolicy="no-referrer"
                       onError={(e) => {
-                        const proxy = 'https://wsrv.nl/?url=' + encodeURIComponent(imageUrl);
-                        if (e.currentTarget.src !== proxy) {
-                          e.currentTarget.src = proxy;
-                        }
+                        if (e.currentTarget.parentElement) e.currentTarget.parentElement.style.display = 'none';
                       }}
-                      className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-[1.06] transition-all duration-700"
+                      className="block w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-[1.06] transition-all duration-700"
                     />
                     {/* Hover overlay — glassmorphic */}
                     <div className="absolute inset-0 bg-gradient-to-t from-[#0B132B]/95 via-[#0B132B]/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-400 flex flex-col justify-end p-7 backdrop-blur-[1px]">
@@ -348,7 +397,7 @@ export default function LandingPage() {
               </Marquee>
             </div>
           </div>
-        </section>
+        </motion.section>
       )}
 
       {/* ─── Footer ──────────────────────────────────────────────────── */}
