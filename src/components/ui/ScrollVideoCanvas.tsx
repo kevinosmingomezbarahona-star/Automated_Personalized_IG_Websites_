@@ -6,32 +6,39 @@ interface ScrollVideoCanvasProps {
 }
 
 const TOTAL_FRAMES = 147;
+// Load frames in batches: first batch is large enough to start scrolling immediately
+const BATCH_SIZE = 30;
 
 export const ScrollVideoCanvas = ({ companyName = 'Exquisite Properties' }: ScrollVideoCanvasProps) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const [images, setImages] = useState<HTMLImageElement[]>([]);
+    const imagesRef = useRef<HTMLImageElement[]>(new Array(TOTAL_FRAMES));
     const [imagesLoaded, setImagesLoaded] = useState(false);
 
-    // Render Frame Logic (Object-Fit: Cover scaling)
-    const renderFrame = useCallback((frameIndex: number, currentImages: HTMLImageElement[]) => {
-        if (!canvasRef.current || !currentImages.length) return;
+    // RAF dirty-flag refs — prevents multiple canvas draws per paint frame
+    const rafIdRef = useRef<number | null>(null);
+    const dirtyFrameRef = useRef<number>(0);
+    const isDirtyRef = useRef<boolean>(false);
+
+    // Render Frame Logic (Object-Fit: Cover scaling) — called only from the RAF loop
+    const renderFrame = useCallback((frameIndex: number) => {
+        if (!canvasRef.current || !imagesRef.current.length) return;
 
         const ctx = canvasRef.current.getContext('2d');
         if (!ctx) return;
 
-        const img = currentImages[frameIndex];
+        const img = imagesRef.current[frameIndex];
 
         if (img && img.complete && img.naturalHeight !== 0) {
-            const dpr = window.devicePixelRatio || 1;
+            // Cap DPR at 1.5 to prevent 4K/Retina from blowing up canvas buffer size
+            const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
             const rect = canvasRef.current.getBoundingClientRect();
 
-            // Set actual internal dimensions strictly to device pixel ratio
             canvasRef.current.width = rect.width * dpr;
             canvasRef.current.height = rect.height * dpr;
 
             ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
+            ctx.imageSmoothingQuality = 'medium';
 
             ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
 
@@ -40,7 +47,6 @@ export const ScrollVideoCanvas = ({ companyName = 'Exquisite Properties' }: Scro
 
             let renderWidth, renderHeight, xOffset, yOffset;
 
-            // Algorithm for 'object-fit: cover' centered rendering
             if (canvasAspect > imgAspect) {
                 renderWidth = rect.width * dpr;
                 renderHeight = (rect.width * dpr) / imgAspect;
@@ -57,6 +63,15 @@ export const ScrollVideoCanvas = ({ companyName = 'Exquisite Properties' }: Scro
         }
     }, []);
 
+    // RAF loop — only draws once per browser paint frame even if scroll fires many times
+    const rafLoop = useCallback(() => {
+        if (isDirtyRef.current) {
+            isDirtyRef.current = false;
+            renderFrame(dirtyFrameRef.current);
+        }
+        rafIdRef.current = requestAnimationFrame(rafLoop);
+    }, [renderFrame]);
+
     // Scroll tracker
     const { scrollYProgress } = useScroll({
         target: containerRef,
@@ -66,63 +81,80 @@ export const ScrollVideoCanvas = ({ companyName = 'Exquisite Properties' }: Scro
     // Map absolute scroll [0, 1] -> frame index [0, 146]
     const renderFrameIndex = useTransform(scrollYProgress, [0, 1], [0, TOTAL_FRAMES - 1]);
 
-    // Preload frames logic
-    useEffect(() => {
-        let loadedCount = 0;
-        const loadedImages: HTMLImageElement[] = new Array(TOTAL_FRAMES);
+    // Progressive frame loader — loads in batches to avoid 147 concurrent requests
+    const loadBatch = useCallback((batchStart: number, batchEnd: number, onBatchLoaded?: () => void) => {
+        if (batchStart >= TOTAL_FRAMES) return;
+        const end = Math.min(batchEnd, TOTAL_FRAMES);
+        let batchLoaded = 0;
+        const batchSize = end - batchStart;
 
-        for (let i = 1; i <= TOTAL_FRAMES; i++) {
+        for (let i = batchStart; i < end; i++) {
+            // Skip if already loading or loaded
+            if (imagesRef.current[i] && imagesRef.current[i].src) continue;
+
             const img = new Image();
-            img.src = `/assets/video-assets/ezgif-frame-${i.toString().padStart(3, '0')}.jpg`;
+            img.src = `/assets/video-assets/ezgif-frame-${(i + 1).toString().padStart(3, '0')}.jpg`;
+            imagesRef.current[i] = img;
 
             img.onload = () => {
-                loadedCount++;
-
-                // Force an initial draw as soon as the first frame lands so the screen isn't black
-                if (i === 1) {
-                    renderFrame(0, loadedImages);
-                }
-
-                if (loadedCount === TOTAL_FRAMES) {
-                    console.log(`Mansion Assets Ready: ${TOTAL_FRAMES} frames`);
-                    setImages(loadedImages);
-                    setImagesLoaded(true);
+                batchLoaded++;
+                if (batchLoaded >= batchSize && onBatchLoaded) {
+                    onBatchLoaded();
                 }
             };
-
             img.onerror = () => {
-                console.error("FAILED TO LOAD FRAME:", `/assets/video-assets/frame-${i.toString().padStart(3, '0')}.jpg`);
-                loadedCount++;
-                if (loadedCount === TOTAL_FRAMES) {
-                    setImages(loadedImages);
-                    setImagesLoaded(true);
+                batchLoaded++;
+                if (batchLoaded >= batchSize && onBatchLoaded) {
+                    onBatchLoaded();
                 }
             };
-
-            loadedImages[i - 1] = img;
         }
+    }, []);
 
-        // Store active images directly
-        setImages(loadedImages);
+    // Progressive loading: batch 1 first (frames 0-29), then cascade remaining batches
+    useEffect(() => {
+        // Start the RAF loop
+        rafIdRef.current = requestAnimationFrame(rafLoop);
 
-        // Bind resize listener to dynamically redraw active frame for Object-Fit: Cover recalculations
+        // Load first batch immediately — renders frame 0 as soon as it's ready
+        loadBatch(0, BATCH_SIZE, () => {
+            // Draw first frame as soon as it's ready
+            renderFrame(0);
+            setImagesLoaded(true);
+
+            // Then load subsequent batches sequentially to avoid network saturation
+            loadBatch(BATCH_SIZE, BATCH_SIZE * 2, () => {
+                loadBatch(BATCH_SIZE * 2, BATCH_SIZE * 3, () => {
+                    loadBatch(BATCH_SIZE * 3, BATCH_SIZE * 4, () => {
+                        loadBatch(BATCH_SIZE * 4, TOTAL_FRAMES, () => {
+                            console.log(`Mansion Assets Ready: All ${TOTAL_FRAMES} frames loaded.`);
+                        });
+                    });
+                });
+            });
+        });
+
+        // Resize: just mark dirty
         const handleResize = () => {
-            renderFrame(Math.round(renderFrameIndex.get()), loadedImages);
+            isDirtyRef.current = true;
         };
         window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
 
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [renderFrame]);
+        return () => {
+            // Cleanup RAF loop
+            if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
+            window.removeEventListener('resize', handleResize);
+        };
+    }, [loadBatch, rafLoop, renderFrame]);
 
-    // Frame Swap Render Cycle
+    // On scroll: just set the dirty flag — the RAF loop handles the actual draw
     useMotionValueEvent(renderFrameIndex, 'change', (latest) => {
         if (!imagesLoaded) return;
-        renderFrame(Math.round(latest), images);
+        dirtyFrameRef.current = Math.round(latest);
+        isDirtyRef.current = true;
     });
 
     // Overlay Animations (Opacity 0 until frame 135, fade deeply by 140)
-    // Frame 135/147 ~ 0.918... Frame 140/147 ~ 0.952
     const startFade = 135 / TOTAL_FRAMES;
     const endFade = 140 / TOTAL_FRAMES;
 
@@ -154,7 +186,14 @@ export const ScrollVideoCanvas = ({ companyName = 'Exquisite Properties' }: Scro
                 <canvas
                     ref={canvasRef}
                     className="absolute inset-0 w-full h-full"
-                    style={{ width: '100%', height: '100%', zIndex: 1, opacity: 1 }}
+                    style={{
+                        width: '100%',
+                        height: '100%',
+                        zIndex: 1,
+                        opacity: 1,
+                        willChange: 'transform, opacity',
+                        transform: 'translateZ(0)'
+                    }}
                 />
 
                 {/* Gradient shadow to blend canvas bottom into page flow */}

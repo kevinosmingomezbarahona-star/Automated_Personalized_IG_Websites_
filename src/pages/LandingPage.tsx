@@ -128,6 +128,16 @@ export default function LandingPage() {
     console.warn("Caught post_images parse error, falling back to empty array.", e);
   }
 
+  // Force Portfolio logic: 6 luxury fallback assets if empty or < 6
+  const displayImages = (imagesArray && imagesArray.length >= 6) ? imagesArray : [
+    '/placeholders/portfolio-1.png',
+    '/placeholders/portfolio-2.png',
+    '/placeholders/portfolio-3.png',
+    '/placeholders/portfolio-4.png',
+    '/placeholders/portfolio-5.png',
+    '/placeholders/portfolio-6.png'
+  ];
+
 
   const vapiTheme = {
     buttonBg: 'from-amber-500 to-amber-700',
@@ -163,11 +173,11 @@ export default function LandingPage() {
       {/* DIRECTIVE 1: This section is pure HTML/CSS/text — zero render-blocking. */}
       {/* DIRECTIVE 2: Updated H1 + subheader copy pulling companyName dynamically. */}
       <section id="hero" className="relative min-h-[92vh] flex items-center overflow-hidden">
-        {/* Ambient glows — pure CSS, no JS */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-amber-500/[0.07] rounded-full blur-[160px]" />
-          <div className="absolute top-1/4 -left-40 w-96 h-96 bg-amber-600/10 rounded-full blur-[130px]" />
-          <div className="absolute bottom-1/4 -right-40 w-96 h-96 bg-amber-600/10 rounded-full blur-[130px]" />
+        {/* Ambient glows — static background layers pushed to composite layer to prevent paint blocking */}
+        <div className="absolute inset-0 pointer-events-none" style={{ transform: 'translateZ(0)' }}>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-amber-500/[0.07] rounded-full blur-[160px]" style={{ willChange: 'transform, opacity', WebkitBackfaceVisibility: 'hidden' }} />
+          <div className="absolute top-1/4 -left-40 w-96 h-96 bg-amber-600/10 rounded-full blur-[130px]" style={{ willChange: 'transform, opacity', WebkitBackfaceVisibility: 'hidden' }} />
+          <div className="absolute bottom-1/4 -right-40 w-96 h-96 bg-amber-600/10 rounded-full blur-[130px]" style={{ willChange: 'transform, opacity', WebkitBackfaceVisibility: 'hidden' }} />
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative z-10 w-full">
@@ -183,33 +193,27 @@ export default function LandingPage() {
               className="relative"
               variants={fadeUp}
               custom={0}
+              style={{ willChange: 'transform, opacity', WebkitBackfaceVisibility: 'hidden' }} // Prevent child repaints internally
             >
-              {/* Slow breathing outer glow */}
+              {/* Slow breathing outer glow — Hardware Accelerated Cache to prevent per-frame Gaussian Blur calculations on scale */}
               <motion.div
                 className="absolute -inset-6 rounded-full bg-amber-500/20 blur-3xl"
                 animate={{ opacity: [0.3, 0.7, 0.3], scale: [0.95, 1.05, 0.95] }}
                 transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                style={{ willChange: 'transform, opacity', WebkitBackfaceVisibility: 'hidden', transform: 'translateZ(0)' }}
               />
               {/* Hard gold ring */}
               <div className="absolute -inset-[3px] rounded-full bg-gradient-to-br from-amber-400 via-amber-600 to-amber-900 opacity-70 blur-[2px]" />
 
-              {profilePic ? (
-                <img
-                  src={"https://images.weserv.nl/?url=" + encodeURIComponent(profilePic) + "&default=https://placehold.co/400x400?text=Image+Loading"}
-                  alt={companyName}
-                  referrerPolicy="no-referrer"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                  }}
-                  className="relative w-40 h-40 sm:w-56 sm:h-56 lg:w-72 lg:h-72 object-cover rounded-full shadow-2xl shadow-amber-500/20"
-                />
-              ) : (
-                <div className="relative w-40 h-40 sm:w-56 sm:h-56 lg:w-72 lg:h-72 rounded-full border border-amber-500/40 bg-[#0F1E3A] flex items-center justify-center shadow-2xl shadow-amber-500/20">
-                  <span className="text-6xl font-serif text-amber-500">
-                    {companyName.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-              )}
+              <img
+                src={profilePic ? ("https://images.weserv.nl/?url=" + encodeURIComponent(profilePic) + "&default=/placeholders/profile-default.png") : "/placeholders/profile-default.png"}
+                alt={companyName}
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  e.currentTarget.src = '/placeholders/profile-default.png';
+                }}
+                className="relative w-40 h-40 sm:w-56 sm:h-56 lg:w-72 lg:h-72 object-cover rounded-full shadow-2xl shadow-amber-500/20"
+              />
             </motion.div>
 
             {/* ── Unified Massive Hero Header (Directive 1) ── */}
@@ -282,13 +286,11 @@ export default function LandingPage() {
 
       {/* ─── 3D Robot Assistant (LAZY — Directive 1) ──────────────────── */}
       {/* Withheld from render until 2.5 s post-load OR first scroll.       */}
+      {/* Note: no motion.div wrapper — animating around an iframe causes     */}
+      {/* duplicate compositing layers. The splite.tsx IntersectionObserver  */}
+      {/* handles deferral internally; the card preserves its own height.    */}
       {heavyAssetsReady ? (
-        <motion.div
-          className="w-full flex justify-center px-4"
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-        >
+        <div className="w-full flex justify-center px-4">
           <div className="w-full max-w-5xl">
             <SplineSceneBasic
               publicKey={prospect.vapi_public_key || undefined}
@@ -296,32 +298,31 @@ export default function LandingPage() {
               businessSummary={prospect.business_summary || undefined}
             />
           </div>
-        </motion.div>
+        </div>
       ) : (
         // Placeholder preserves layout height so page doesn't jump
         <div className="w-full flex justify-center px-4">
-          <div className="w-full max-w-5xl h-[580px]" aria-hidden="true" />
+          <div className="w-full max-w-5xl h-[500px]" aria-hidden="true" />
         </div>
       )}
 
       {/* ─── Scroll Video Canvas Animation (LAZY — Directive 1) ────────── */}
+      {/* content-visibility:auto lets the browser skip painting this section  */}
+      {/* entirely until it enters the viewport — zero paint cost when above.  */}
       {heavyAssetsReady ? (
-        <motion.section
+        <section
           id="scroll-video-canvas"
           className="relative z-20"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6 }}
+          style={{ contentVisibility: 'auto', willChange: 'transform' }}
         >
           <ScrollVideoCanvas companyName={companyName} />
-        </motion.section>
+        </section>
       ) : (
-        // Placeholder keeps the layout space reserved
         <div id="scroll-video-canvas" className="relative z-20 h-[50vh]" aria-hidden="true" />
       )}
 
       {/* ─── Brand & Portfolio Grid (LAZY — Directive 1) ──────────────── */}
-      {imagesArray.length > 0 && heavyAssetsReady && (
+      {heavyAssetsReady && (
         <motion.section
           id="ig-portfolio"
           className="py-32 bg-[#07091A] relative overflow-hidden"
@@ -354,8 +355,8 @@ export default function LandingPage() {
 
             {/* Marquee Wrapper for Brand & Portfolio Grid */}
             <div className="relative flex w-full flex-col items-center justify-center overflow-hidden min-h-[500px] py-4">
-              <Marquee pauseOnHover className="[--duration:20s] h-full flex items-center">
-                {imagesArray.map((imageUrl, index) => (
+              <Marquee pauseOnHover repeat={2} className="[--duration:20s] h-full flex items-center">
+                {displayImages.map((imageUrl, index) => (
                   <motion.div
                     key={index}
                     className="group relative flex w-72 sm:w-80 lg:w-96 aspect-[4/5] overflow-hidden rounded-sm border border-white/[0.07] hover:border-amber-500/40 transition-colors duration-500"
@@ -369,11 +370,11 @@ export default function LandingPage() {
                     }}
                   >
                     <img
-                      src={"https://images.weserv.nl/?url=" + encodeURIComponent(imageUrl) + "&default=https://placehold.co/400x400?text=Image+Loading"}
+                      src={imageUrl.startsWith('http') ? ("https://images.weserv.nl/?url=" + encodeURIComponent(imageUrl) + "&default=/placeholders/portfolio-" + ((index % 6) + 1) + ".png") : imageUrl}
                       alt={`Brand Post ${index + 1}`}
                       referrerPolicy="no-referrer"
                       onError={(e) => {
-                        if (e.currentTarget.parentElement) e.currentTarget.parentElement.style.display = 'none';
+                        e.currentTarget.src = '/placeholders/portfolio-' + ((index % 6) + 1) + '.png';
                       }}
                       className="block w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-[1.06] transition-all duration-700"
                     />
