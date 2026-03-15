@@ -1,0 +1,146 @@
+﻿diff --git a/src/components/ui/spotlight.tsx b/src/components/ui/spotlight.tsx
+index 82cde51..3b5cc02 100644
+--- a/src/components/ui/spotlight.tsx
++++ b/src/components/ui/spotlight.tsx
+@@ -1,55 +1,91 @@
+-import { cn } from '../../lib/utils'
++import { memo, useRef, useEffect } from 'react';
++import { useMotionValue, useSpring, motion } from 'framer-motion';
++import { cn } from '../../lib/utils';
+ 
+ type SpotlightProps = {
+-    className?: string
+-    fill?: string
+-}
++    className?: string;
++    fill?: string;
++};
++
++/**
++ * Spotlight ÔÇö GPU-lightweight version.
++ *
++ * The original SVG used feGaussianBlur with stdDeviation=151, which forces
++ * a massive raster offscreen buffer on the GPU every frame. This version
++ * replaces that entirely with a CSS radial-gradient <div> on its own
++ * composited layer (will-change: transform). Zero SVG filter overhead.
++ *
++ * Mouse tracking uses Framer Motion's useMotionValue + useSpring so that
++ * positional updates NEVER cause a React state change or re-render in any
++ * parent component. The animation runs entirely in the Motion layer.
++ */
++export const Spotlight = memo(function Spotlight({ className, fill = 'white' }: SpotlightProps) {
++    const containerRef = useRef<HTMLDivElement>(null);
++
++    // Motion values ÔÇö updates bypass React's render cycle entirely
++    const mouseX = useMotionValue(0);
++    const mouseY = useMotionValue(0);
++
++    const springX = useSpring(mouseX, { damping: 30, stiffness: 200, mass: 0.2 });
++    const springY = useSpring(mouseY, { damping: 30, stiffness: 200, mass: 0.2 });
++
++    useEffect(() => {
++        const el = containerRef.current?.closest('[data-spotlight-root]') as HTMLElement | null
++            || containerRef.current?.parentElement;
++
++        if (!el) return;
++
++        const handleMouseMove = (e: MouseEvent) => {
++            const rect = el.getBoundingClientRect();
++            mouseX.set(e.clientX - rect.left);
++            mouseY.set(e.clientY - rect.top);
++        };
++
++        el.addEventListener('mousemove', handleMouseMove, { passive: true });
++        return () => el.removeEventListener('mousemove', handleMouseMove);
++    }, [mouseX, mouseY]);
++
++    // Parse fill to build a colour-matching glow. Fall back to white.
++    const glowColor = fill === 'white'
++        ? 'rgba(255,255,255,0.18)'
++        : 'rgba(255,255,255,0.12)';
+ 
+-export const Spotlight = ({ className, fill }: SpotlightProps) => {
+     return (
+-        <svg
+-            className={cn(
+-                'animate-spotlight pointer-events-none absolute z-[1] h-[169%] w-[138%] lg:w-[84%] opacity-0',
+-                className
+-            )}
+-            xmlns="http://www.w3.org/2000/svg"
+-            viewBox="0 0 3787 2842"
+-            fill="none"
++        <div
++            ref={containerRef}
++            className={cn('pointer-events-none absolute inset-0 z-[1] overflow-hidden', className)}
++            aria-hidden="true"
+         >
+-            <g filter="url(#filter)">
+-                <ellipse
+-                    cx="1924.71"
+-                    cy="273.501"
+-                    rx="1924.71"
+-                    ry="273.501"
+-                    transform="matrix(-0.822377 -0.568943 -0.568943 0.822377 3631.88 2291.09)"
+-                    fill={fill || 'white'}
+-                    fillOpacity="0.21"
+-                />
+-            </g>
+-            <defs>
+-                <filter
+-                    id="filter"
+-                    x="0.860352"
+-                    y="0.838989"
+-                    width="3785.16"
+-                    height="2840.26"
+-                    filterUnits="userSpaceOnUse"
+-                    colorInterpolationFilters="sRGB"
+-                >
+-                    <feFlood floodOpacity="0" result="BackgroundImageFix" />
+-                    <feBlend
+-                        mode="normal"
+-                        in="SourceGraphic"
+-                        in2="BackgroundImageFix"
+-                        result="shape"
+-                    />
+-                    <feGaussianBlur
+-                        stdDeviation="151"
+-                        result="effect1_foregroundBlur_1065_8"
+-                    />
+-                </filter>
+-            </defs>
+-        </svg>
+-    )
+-}
++            <motion.div
++                style={{
++                    position: 'absolute',
++                    // Centre the gradient on the cursor
++                    x: springX,
++                    y: springY,
++                    translateX: '-50%',
++                    translateY: '-50%',
++                    width: 800,
++                    height: 800,
++                    borderRadius: '50%',
++                    background: `radial-gradient(circle, ${glowColor} 0%, transparent 70%)`,
++                    // Force GPU compositing ÔÇö zero layout/paint cost per frame
++                    willChange: 'transform, opacity',
++                    // Never intercept mouse events bound for the Spline canvas
++                    pointerEvents: 'none',
++                }}
++            />
++            {/* Static ambient glow ÔÇö pure CSS, zero JS cost */}
++            <div
++                style={{
++                    position: 'absolute',
++                    top: '-20%',
++                    left: '-10%',
++                    width: '60%',
++                    height: '80%',
++                    background: `radial-gradient(ellipse at top left, ${glowColor} 0%, transparent 65%)`,
++                    pointerEvents: 'none',
++                }}
++            />
++        </div>
++    );
++});

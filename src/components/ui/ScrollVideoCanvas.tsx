@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { motion, useScroll, useTransform, useMotionValueEvent } from 'framer-motion';
+import { useScroll, useTransform, useMotionValueEvent } from 'framer-motion';
 
 interface ScrollVideoCanvasProps {
     companyName?: string;
@@ -9,7 +9,7 @@ const TOTAL_FRAMES = 147;
 // Load frames in batches: first batch is large enough to start scrolling immediately
 const BATCH_SIZE = 30;
 
-export const ScrollVideoCanvas = ({ companyName = 'Exquisite Properties' }: ScrollVideoCanvasProps) => {
+export const ScrollVideoCanvas = ({}: ScrollVideoCanvasProps) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const imagesRef = useRef<HTMLImageElement[]>(new Array(TOTAL_FRAMES));
@@ -154,30 +154,7 @@ export const ScrollVideoCanvas = ({ companyName = 'Exquisite Properties' }: Scro
         isDirtyRef.current = true;
     });
 
-    // Overlay Animations (Opacity 0 until frame 135, fade deeply by 140)
-    const startFade = 135 / TOTAL_FRAMES;
-    const endFade = 140 / TOTAL_FRAMES;
 
-    const overlayOpacity = useTransform(
-        scrollYProgress,
-        [startFade, endFade],
-        [0, 1]
-    );
-    const overlayScale = useTransform(
-        scrollYProgress,
-        [startFade, endFade],
-        [1.05, 1]
-    );
-    const overlayX = useTransform(
-        scrollYProgress,
-        [startFade, endFade],
-        [100, 0]
-    );
-    const overlayY = useTransform(
-        scrollYProgress,
-        [startFade, endFade],
-        [-100, 0]
-    );
 
     return (
         <div ref={containerRef} className="relative w-full h-[300vh] bg-[#07091A]">
@@ -200,32 +177,7 @@ export const ScrollVideoCanvas = ({ companyName = 'Exquisite Properties' }: Scro
                 <div className="absolute inset-0 -bottom-2 bg-gradient-to-t from-[#0B132B] via-transparent to-transparent pointer-events-none" />
                 <div className="absolute inset-0 -top-2 bg-gradient-to-b from-[#0B132B] via-transparent to-transparent pointer-events-none" />
 
-                {/* Lead Qualified Sticky Overlay */}
-                <motion.div
-                    className="relative z-10 w-full max-w-4xl mx-auto px-4 text-center pointer-events-none"
-                    style={{
-                        opacity: overlayOpacity,
-                        scale: overlayScale,
-                        x: overlayX,
-                        y: overlayY,
-                    }}
-                >
-                    <div className="bg-[#0B132B]/60 backdrop-blur-xl border border-amber-500/30 rounded-3xl p-8 sm:p-12 shadow-[0_0_50px_rgba(245,158,11,0.15)] inline-block">
-                        <h2
-                            className="text-2xl sm:text-3xl md:text-5xl font-serif font-medium text-white tracking-tight"
-                            style={{ fontFamily: "'Playfair Display', serif" }}
-                        >
-                            LEAD QUALIFIED:{' '}
-                            <span className="text-amber-500 italic block sm:inline mt-2 sm:mt-0">
-                                {companyName}
-                            </span>
-                        </h2>
-                        <p className="mt-4 sm:mt-6 text-sm sm:text-base tracking-[0.3em] uppercase text-slate-300 font-semibold font-sans">
-                            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse mr-3 shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
-                            AI Appointment Booked
-                        </p>
-                    </div>
-                </motion.div>
+
             </div>
         </div>
     );

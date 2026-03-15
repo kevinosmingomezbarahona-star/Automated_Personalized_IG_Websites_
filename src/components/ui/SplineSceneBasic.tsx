@@ -20,7 +20,7 @@ export const SplineSceneBasic = memo(function SplineSceneBasic({
     const { isCallActive, isConnecting, startCall } = useVapi({ publicKey, assistantId });
 
     return (
-        <Card className="w-full h-[500px] bg-zinc-950 relative overflow-hidden flex flex-col md:flex-row items-center border-neutral-800">
+        <Card className="w-full h-[500px] bg-zinc-950 relative overflow-hidden flex flex-col md:flex-row items-center border-neutral-800" data-spotlight-root>
             <Spotlight
                 className="-top-40 left-0 md:left-20 md:-top-20"
                 fill="white"

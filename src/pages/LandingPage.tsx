@@ -218,13 +218,13 @@ export default function LandingPage() {
 
             {/* ── Unified Massive Hero Header (Directive 1) ── */}
             <motion.h1
-              className="text-4xl md:text-5xl lg:text-6xl font-serif font-medium tracking-tight leading-snug text-white max-w-5xl mx-auto h-[280px] sm:h-[220px] md:h-[240px] lg:h-[280px] relative w-full flex flex-col items-center justify-center text-center overflow-hidden"
+              className="text-4xl md:text-5xl lg:text-6xl font-serif font-medium tracking-tight leading-snug text-white max-w-5xl mx-auto min-h-[280px] sm:min-h-[220px] md:min-h-[240px] lg:min-h-[280px] relative w-full flex flex-wrap items-center justify-center text-center overflow-hidden gap-2"
               style={{ fontFamily: "'Playfair Display', serif", fontWeight: 600 }}
               variants={fadeUp}
               custom={0.1}
             >
-              <span>Hey {companyName}. I have built an AI sales agent that helps elite real estate teams like yours{' '}</span>
-              <span className="left-0 right-0 mx-auto w-full flex justify-center font-serif italic font-normal text-amber-500 absolute bottom-4 sm:bottom-0 text-center">
+              <span>Hey {companyName}. I have built a custom demand-capture asset that triages inbound traffic for elite real estate teams like yours&nbsp;</span>
+              <span className="font-serif italic font-normal text-amber-500 text-center" style={{ marginLeft: '8px' }}>
                 <Typewriter text={["24/7.", "while you sleep.", "instantly.", "every single day.", "without taking breaks."]} speed={70} waitTime={2000} />
               </span>
             </motion.h1>
