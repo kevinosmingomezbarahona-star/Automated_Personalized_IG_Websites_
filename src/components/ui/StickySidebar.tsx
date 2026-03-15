@@ -7,15 +7,20 @@ interface Section {
 }
 
 const sections: Section[] = [
-    { id: "hero", label: "Hero" },
-    { id: "voice-agent-test", label: "Live Demo" },
-    { id: "ig-portfolio", label: "Portfolio" },
+    { id: "overview", label: "Overview" },
+    { id: "demo-concierge", label: "Demo Concierge" },
+    { id: "your-presence", label: "Your Presence" },
 ];
 
 export function StickySidebar() {
     const [activeSection, setActiveSection] = useState<string>("hero");
 
     useEffect(() => {
+        // ── Tripwire Observer ──────────────────────────────────────────
+        // rootMargin of -50%/-50% creates a 1px-tall invisible line at
+        // the exact centre of the viewport. Whichever section crosses
+        // that line becomes the active dot. threshold:0 means it fires
+        // the instant *any* part of the section touches the tripwire.
         const observer = new IntersectionObserver(
             (entries) => {
                 entries.forEach((entry) => {
@@ -26,7 +31,7 @@ export function StickySidebar() {
             },
             {
                 root: null,
-                rootMargin: "-20% 0px -60% 0px", // adjust thresholds to trigger active state earlier/later
+                rootMargin: "-50% 0px -50% 0px",
                 threshold: 0,
             }
         );
@@ -36,7 +41,24 @@ export function StickySidebar() {
             if (el) observer.observe(el);
         });
 
-        return () => observer.disconnect();
+        // ── Bottom-of-page fallback ────────────────────────────────────
+        // The last section ("your-presence") may be too short to ever
+        // cross the centre tripwire. When the user reaches the very
+        // bottom of the page, force-activate the last section.
+        const lastId = sections[sections.length - 1].id;
+        const handleScroll = () => {
+            const scrollBottom = window.scrollY + window.innerHeight;
+            const pageHeight = document.documentElement.scrollHeight;
+            if (pageHeight - scrollBottom < 80) {
+                setActiveSection(lastId);
+            }
+        };
+        window.addEventListener("scroll", handleScroll, { passive: true });
+
+        return () => {
+            observer.disconnect();
+            window.removeEventListener("scroll", handleScroll);
+        };
     }, []);
 
     const handleScrollTo = (id: string) => {

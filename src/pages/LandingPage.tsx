@@ -158,11 +158,11 @@ export default function LandingPage() {
             <div className="text-xl sm:text-2xl font-serif font-light tracking-[0.22em] text-white">
               {companyName.toUpperCase()}
             </div>
-            {/* AI badge */}
+            {/* Concierge badge */}
             <div className="hidden sm:flex items-center gap-2.5 bg-white/5 backdrop-blur-md border border-amber-500/30 px-4 py-1.5 rounded-full">
               <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
               <span className="text-[11px] tracking-[0.25em] text-amber-400 uppercase font-semibold">
-                AI Live Demo
+                Live Concierge
               </span>
             </div>
           </div>
@@ -172,7 +172,7 @@ export default function LandingPage() {
       {/* ─── Hero Section ─────────────────────────────────────────────── */}
       {/* DIRECTIVE 1: This section is pure HTML/CSS/text — zero render-blocking. */}
       {/* DIRECTIVE 2: Updated H1 + subheader copy pulling companyName dynamically. */}
-      <section id="hero" className="relative min-h-[92vh] flex items-center overflow-hidden">
+      <section id="overview" className="relative min-h-[92vh] flex items-center overflow-hidden">
         {/* Ambient glows — static background layers pushed to composite layer to prevent paint blocking */}
         <div className="absolute inset-0 pointer-events-none" style={{ transform: 'translateZ(0)' }}>
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-amber-500/[0.07] rounded-full blur-[160px]" style={{ willChange: 'transform, opacity', WebkitBackfaceVisibility: 'hidden' }} />
@@ -290,7 +290,7 @@ export default function LandingPage() {
       {/* duplicate compositing layers. The splite.tsx IntersectionObserver  */}
       {/* handles deferral internally; the card preserves its own height.    */}
       {heavyAssetsReady ? (
-        <div className="w-full flex justify-center px-4">
+        <div id="demo-concierge" className="w-full flex justify-center px-4">
           <div className="w-full max-w-5xl">
             <SplineSceneBasic
               publicKey={prospect.vapi_public_key || undefined}
@@ -301,7 +301,7 @@ export default function LandingPage() {
         </div>
       ) : (
         // Placeholder preserves layout height so page doesn't jump
-        <div className="w-full flex justify-center px-4">
+        <div id="demo-concierge" className="w-full flex justify-center px-4">
           <div className="w-full max-w-5xl h-[500px]" aria-hidden="true" />
         </div>
       )}
@@ -311,20 +311,20 @@ export default function LandingPage() {
       {/* entirely until it enters the viewport — zero paint cost when above.  */}
       {heavyAssetsReady ? (
         <section
-          id="scroll-video-canvas"
+          id="precision-capture"
           className="relative z-20"
           style={{ contentVisibility: 'auto', willChange: 'transform' }}
         >
           <ScrollVideoCanvas companyName={companyName} />
         </section>
       ) : (
-        <div id="scroll-video-canvas" className="relative z-20 h-[50vh]" aria-hidden="true" />
+        <div id="precision-capture" className="relative z-20 h-[50vh]" aria-hidden="true" />
       )}
 
       {/* ─── Brand & Portfolio Grid (LAZY — Directive 1) ──────────────── */}
       {heavyAssetsReady && (
         <motion.section
-          id="ig-portfolio"
+          id="your-presence"
           className="py-32 bg-[#07091A] relative overflow-hidden"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

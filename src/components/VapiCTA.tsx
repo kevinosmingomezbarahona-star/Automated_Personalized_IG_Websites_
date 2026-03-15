@@ -1,12 +1,11 @@
-import { Mic, Phone } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Mic } from 'lucide-react';
 import { useVapi } from '../hooks/useVapi';
 
 interface VapiCTAProps {
   companyName: string;
   publicKey: string;
   assistantId: string;
-  phoneNumber?: string;
+  phoneNumber?: string; // Keeping interface intact in case other components pass it
   theme: {
     buttonBg: string;
     textColorClass: string;
@@ -18,50 +17,40 @@ export default function VapiCTA({
   companyName: _companyName,
   publicKey,
   assistantId,
-  phoneNumber,
   theme: _theme,
 }: VapiCTAProps) {
   const { startCall, isConnecting, isCallActive } = useVapi({ publicKey, assistantId });
 
-  if (!publicKey || !assistantId) return null;
+  const label = isConnecting ? 'Connecting…' : isCallActive ? 'Call Active' : 'Tap Here to Speak with the Concierge';
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+    <div className="flex flex-col items-center justify-center w-full max-w-2xl mx-auto">
+      {/* Primary CTA — 21st.dev Interactive Hover Button (hover fix) */}
+      <button
+        onClick={startCall}
+        disabled={isConnecting || isCallActive}
+        className="group relative w-full cursor-pointer overflow-hidden rounded-full border border-amber-500 bg-transparent text-center font-semibold flex items-center justify-center px-8 py-4 disabled:opacity-50 disabled:cursor-not-allowed"
+        style={{
+          fontSize: '1.0625rem',
+          letterSpacing: '0.4px',
+          boxShadow: '0 4px 14px rgba(245, 158, 11, 0.25)',
+        }}
+      >
+        {/* Layer 1 — Expanding amber fill on hover (z-0 so layers 2 & 3 sit above) */}
+        <div className="absolute left-[20%] top-[40%] z-0 h-2 w-2 scale-[1] rounded-lg bg-amber-500 opacity-0 transition-all duration-300 group-hover:left-[0%] group-hover:top-[0%] group-hover:h-full group-hover:w-full group-hover:scale-[1.8] group-hover:opacity-100" />
 
-      {/* Primary — gold bg with breathing pulse glow */}
-      <div className="relative">
-        {/* Breathing ambient glow behind button */}
-        <motion.div
-          className="absolute -inset-2 rounded-sm bg-amber-500/40 blur-lg"
-          animate={{ opacity: [0.4, 0.85, 0.4], scale: [0.96, 1.04, 0.96] }}
-          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
-        />
-        <motion.button
-          onClick={startCall}
-          disabled={isConnecting || isCallActive}
-          whileHover={{ scale: 1.04 }}
-          whileTap={{ scale: 0.97 }}
-          transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-          className="relative bg-amber-500 text-black px-9 py-4 text-[11px] tracking-[0.25em] font-bold uppercase shadow-lg shadow-amber-500/30 hover:bg-amber-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3"
-        >
-          <Mic className="w-4 h-4" />
-          {isConnecting ? 'Connecting…' : isCallActive ? 'Call Active' : 'Test Voice Agent in Browser'}
-        </motion.button>
-      </div>
+        {/* Layer 2 — Default resting text (slides out on hover) */}
+        <span className="relative z-10 inline-flex items-center gap-3 text-amber-500 translate-x-0 transition-all duration-300 group-hover:translate-x-12 group-hover:opacity-0">
+          <Mic className="w-5 h-5 flex-shrink-0" strokeWidth={2} />
+          {label}
+        </span>
 
-      {/* Secondary — transparent with gold border */}
-      {phoneNumber && (
-        <motion.a
-          href={`tel:${phoneNumber}`}
-          whileHover={{ scale: 1.04 }}
-          whileTap={{ scale: 0.97 }}
-          transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-          className="border border-amber-500/70 text-amber-400 px-9 py-4 text-[11px] tracking-[0.25em] font-semibold uppercase hover:bg-amber-500/10 transition-colors flex items-center gap-3"
-        >
-          <Phone className="w-4 h-4" />
-          Call by Phone
-        </motion.a>
-      )}
+        {/* Layer 3 — Hover text + icon slides in, dark contrast against amber fill */}
+        <div className="absolute top-0 z-20 flex h-full w-full translate-x-12 items-center justify-center gap-3 text-slate-900 font-bold opacity-0 transition-all duration-300 group-hover:-translate-x-0 group-hover:opacity-100 px-6">
+          <span className="whitespace-nowrap">{label}</span>
+          <Mic className="w-5 h-5 flex-shrink-0" strokeWidth={2} />
+        </div>
+      </button>
     </div>
   );
 }
